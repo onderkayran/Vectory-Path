@@ -27,17 +27,6 @@
       background-color: #eee;
       border-radius: 8px;
     }
-    #rules-panel {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 280px;
-      background-color: #fff9e6;
-      border: 1px solid #ffcc00;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
     .scoreboard {
       font-size: 18px;
       margin: 10px;
@@ -81,21 +70,83 @@
       padding: 5px;
       text-align: center;
     }
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fff9e6;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #ffcc00;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: black;
+    }
+    #rulesBtn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #e67e22;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 100;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .modal-content ul {
+      text-align: left;
+      padding-left: 20px;
+    }
+    .modal-content li {
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
-  <div id="rules-panel">
-    <h3 style="margin-top:0;color:#e67e22">🕹️ Game Rules</h3>
-    <p><strong>🎯 Start:</strong> <span style="color:#2ecc71">Bottom-left corner</span></p>
-    <p><strong>🏁 Finish:</strong> <span style="color:#e74c3c">Top-right corner</span></p>
-    <p><strong>🔄 Turn Order:</strong> <strong style="color:#9b59b6">PLAYER</strong> first, then <strong style="color:#f39c12">ROBOT</strong></p>
-    <p><strong>⚡ Difficulties:</strong></p>
-    <ul style="text-align:left;padding-left:20px">
-      <li><strong>Easy:</strong> Random moves</li>
-      <li><strong>Medium:</strong> Smart moves</li>
-      <li><strong>Hard:</strong> Avoids critical points unless forced</li>
-      <li><strong>Expert:</strong> Never uses critical points</li>
-    </ul>
+  <button id="rulesBtn">?</button>
+
+  <div id="rulesModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3 style="margin-top:0;color:#e67e22">🕹️ Game Rules</h3>
+      <ul>
+        <li><strong>Start:</strong> Tap one of the 3 points near the bottom-left corner to begin</li>
+        <li><strong>Movement:</strong> From where the robot's vector ends, you can move one unit to any adjacent point</li>
+        <li><strong>Goal:</strong> Reach the top-right corner (red point)</li>
+        <li><strong>Turns:</strong> <strong style="color:#9b59b6">YOU</strong> move first, then the <strong style="color:#f39c12">ROBOT</strong></li>
+        <li><strong>Difficulty Levels:</strong>
+          <ul>
+            <li><strong>Easy:</strong> Random moves</li>
+            <li><strong>Medium:</strong> Smart moves</li>
+            <li><strong>Hard:</strong> Avoids critical points when possible</li>
+            <li><strong>Expert:</strong> Never uses critical points</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
   </div>
 
   <h1 style="color:#3498db">Vector Path Game</h1>
@@ -143,6 +194,11 @@
   const gridWidthInput = document.getElementById('gridWidth');
   const gridHeightInput = document.getElementById('gridHeight');
 
+  // Modal elements
+  const modal = document.getElementById('rulesModal');
+  const rulesBtn = document.getElementById('rulesBtn');
+  const span = document.getElementsByClassName('close')[0];
+
   // Game variables
   let gridWidth = 5;
   let gridHeight = 5;
@@ -182,6 +238,21 @@
       avoidCritical: true
     }
   };
+
+  // Modal functions
+  rulesBtn.onclick = function() {
+    modal.style.display = "block";
+  }
+
+  span.onclick = function() {
+    modal.style.display = "none";
+  }
+
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  }
 
   // Calculate cell size
   function calculateCellSize() {
