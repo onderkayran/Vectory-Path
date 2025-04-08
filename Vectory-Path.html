@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector Path Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    #gameCanvas {
+      background-color: white;
+      border: 2px solid #333;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      margin: 20px auto;
+      display: block;
+      cursor: pointer;
+    }
+    .controls {
+      margin: 15px;
+      padding: 10px;
+      background-color: #eee;
+      border-radius: 8px;
+    }
+    #rules-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 280px;
+      background-color: #fff9e6;
+      border: 1px solid #ffcc00;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .scoreboard {
+      font-size: 18px;
+      margin: 10px;
+      font-weight: bold;
+    }
+    #resultMessage {
+      font-size: 24px;
+      color: #e74c3c;
+      margin: 15px;
+      height: 30px;
+    }
+    #newGameBtn {
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      display: none;
+      margin: 20px auto;
+    }
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: #f00;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .difficulty-selector {
+      margin: 10px 0;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .grid-size-input {
+      width: 40px;
+      padding: 5px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="rules-panel">
+    <h3 style="margin-top:0;color:#e67e22">🕹️ Game Rules</h3>
+    <p><strong>🎯 Start:</strong> <span style="color:#2ecc71">Bottom-left corner</span></p>
+    <p><strong>🏁 Finish:</strong> <span style="color:#e74c3c">Top-right corner</span></p>
+    <p><strong>🔄 Turn Order:</strong> <strong style="color:#9b59b6">PLAYER</strong> first, then <strong style="color:#f39c12">ROBOT</strong></p>
+    <p><strong>⚡ Difficulties:</strong></p>
+    <ul style="text-align:left;padding-left:20px">
+      <li><strong>Easy:</strong> Random moves</li>
+      <li><strong>Medium:</strong> Smart moves</li>
+      <li><strong>Hard:</strong> Avoids critical points unless forced</li>
+      <li><strong>Expert:</strong> Never uses critical points</li>
+    </ul>
+  </div>
+
+  <h1 style="color:#3498db">Vector Path Game</h1>
+  
+  <div class="controls">
+    <div>
+      <span style="font-weight:bold">Difficulty:</span>
+      <select id="difficultySelect" class="difficulty-selector">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+        <option value="expert">Expert</option>
+      </select>
+    </div>
+    <div style="margin-top:10px">
+      <label style="font-weight:bold">Grid:</label>
+      <input type="number" id="gridWidth" class="grid-size-input" min="3" max="10" value="5">
+      <span>x</span>
+      <input type="number" id="gridHeight" class="grid-size-input" min="3" max="10" value="5">
+      <button onclick="startNewGame()" style="padding:5px 10px;background:#3498db;color:white;border:none;border-radius:3px;cursor:pointer">New Game</button>
+    </div>
+  </div>
+
+  <div class="scoreboard">
+    <span style="color:#9b59b6">Player: <span id="playerScore">0</span></span> - 
+    <span style="color:#f39c12">Robot: <span id="robotScore">0</span></span> | 
+    Turn: <span id="turnDisplay" style="font-weight:bold">Player</span>
+  </div>
+
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  
+  <div id="resultMessage" style="font-weight:bold"></div>
+  <button id="newGameBtn">NEW GAME</button>
+
+<script>
+  // Game elements
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const messageBox = document.getElementById('resultMessage');
+  const turnDisplay = document.getElementById('turnDisplay');
+  const playerScoreSpan = document.getElementById('playerScore');
+  const robotScoreSpan = document.getElementById('robotScore');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const difficultySelect = document.getElementById('difficultySelect');
+  const gridWidthInput = document.getElementById('gridWidth');
+  const gridHeightInput = document.getElementById('gridHeight');
+
+  // Game variables
+  let gridWidth = 5;
+  let gridHeight = 5;
+  let cellSize;
+  let points = [];
+  let drawnEdges = [];
+  let currentPlayer = 1;
+  let playerScore = 0;
+  let robotScore = 0;
+  let gameActive = true;
+  let difficulty = 'easy';
+
+  // Difficulty settings
+  const DIFFICULTY = {
+    easy: {
+      robotDelay: 1200,
+      strategy: 'random',
+      mistakeRate: 0.4,
+      avoidCritical: false
+    },
+    medium: {
+      robotDelay: 800,
+      strategy: 'balanced',
+      mistakeRate: 0.2,
+      avoidCritical: false
+    },
+    hard: {
+      robotDelay: 500,
+      strategy: 'blocker',
+      mistakeRate: 0.1,
+      avoidCritical: true
+    },
+    expert: {
+      robotDelay: 300,
+      strategy: 'perfect',
+      mistakeRate: 0,
+      avoidCritical: true
+    }
+  };
+
+  // Calculate cell size
+  function calculateCellSize() {
+    return 100;
+  }
+
+  // Adjust canvas
+  function adjustCanvasSize() {
+    cellSize = calculateCellSize();
+    canvas.width = cellSize * (gridWidth - 1);
+    canvas.height = cellSize * (gridHeight - 1);
+  }
+
+  // Get critical points (adjacent to finish)
+  function getCriticalPoints() {
+    return [
+      { x: (gridWidth-2)*cellSize, y: 0 },               // Left
+      { x: (gridWidth-1)*cellSize, y: 1*cellSize },      // Below
+      { x: (gridWidth-2)*cellSize, y: 1*cellSize }       // Diagonal
+    ];
+  }
+
+  // Draw grid
+  function drawGrid() {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Grid lines
+    ctx.strokeStyle = '#eee';
+    ctx.lineWidth = 1;
+    for (let y = 0; y < gridHeight; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * cellSize);
+      ctx.lineTo(canvas.width, y * cellSize);
+      ctx.stroke();
+    }
+    for (let x = 0; x < gridWidth; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * cellSize, 0);
+      ctx.lineTo(x * cellSize, canvas.height);
+      ctx.stroke();
+    }
+
+    // Draw points
+    points = [];
+    const criticalPoints = getCriticalPoints();
+    for (let y = 0; y < gridHeight; y++) {
+      for (let x = 0; x < gridWidth; x++) {
+        const px = x * cellSize;
+        const py = y * cellSize;
+        points.push({x: px, y: py});
+
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        
+        if (x === 0 && y === gridHeight-1) {
+          ctx.fillStyle = '#2ecc71'; // Start
+        } else if (x === gridWidth-1 && y === 0) {
+          ctx.fillStyle = '#e74c3c'; // Finish
+        } else if (criticalPoints.some(cp => cp.x === px && cp.y === py)) {
+          ctx.fillStyle = '#ff0000'; // Critical points
+        } else {
+          ctx.fillStyle = '#3498db'; // Normal
+        }
+        
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    // Draw paths
+    for (const edge of drawnEdges) {
+      ctx.beginPath();
+      ctx.moveTo(edge.from.x, edge.from.y);
+      ctx.lineTo(edge.to.x, edge.to.y);
+      ctx.strokeStyle = edge.player === 1 ? '#9b59b6' : '#f39c12';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+
+    // Highlight active point
+    if (gameActive) {
+      const activeStartPoint = getActiveStartPoint();
+      if (activeStartPoint) {
+        ctx.beginPath();
+        ctx.arc(activeStartPoint.x, activeStartPoint.y, 10, 0, Math.PI * 2);
+        ctx.strokeStyle = currentPlayer === 1 ? '#9b59b6' : '#f39c12';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Get current position
+  function getActiveStartPoint() {
+    if (drawnEdges.length === 0) {
+      return points.find(p => p.x === 0 && p.y === (gridHeight-1)*cellSize);
+    }
+    return drawnEdges[drawnEdges.length - 1].to;
+  }
+
+  // Confetti effect
+  function createConfetti() {
+    const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
+    for (let i = 0; i < 150; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.top = -10 + 'px';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.width = Math.random() * 10 + 5 + 'px';
+      confetti.style.height = Math.random() * 10 + 5 + 'px';
+      confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+      document.body.appendChild(confetti);
+      
+      const animationDuration = Math.random() * 3 + 2;
+      
+      // Animate
+      confetti.animate([
+        { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+        { transform: `translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+      ], {
+        duration: animationDuration * 1000,
+        easing: 'cubic-bezier(0.1,0.8,0.4,1)'
+      });
+      
+      // Remove after animation
+      setTimeout(() => confetti.remove(), animationDuration * 1000);
+    }
+  }
+
+  // Game logic
+  function isAdjacent(p1, p2) {
+    const dx = Math.abs(p1.x - p2.x) / cellSize;
+    const dy = Math.abs(p1.y - p2.y) / cellSize;
+    return (dx <= 1 && dy <= 1) && (dx + dy > 0);
+  }
+
+  function isEdgeUsed(p1, p2) {
+    return drawnEdges.some(e => 
+      (e.from.x === p1.x && e.from.y === p1.y && e.to.x === p2.x && e.to.y === p2.y) ||
+      (e.from.x === p2.x && e.from.y === p2.y && e.to.x === p1.x && e.to.y === p1.y)
+    );
+  }
+
+  function checkVictory(point) {
+    return point && point.x === (gridWidth-1)*cellSize && point.y === 0;
+  }
+
+  function endGame(winner) {
+    messageBox.textContent = `🎉 ${winner} wins! 🎉`;
+    messageBox.style.color = winner === 'Player' ? '#2ecc71' : '#e74c3c';
+    
+    if (winner === 'Player') {
+      playerScore++;
+      createConfetti();
+    } else {
+      robotScore++;
+    }
+    
+    updateScores();
+    gameActive = false;
+    newGameBtn.style.display = 'block';
+  }
+
+  function updateScores() {
+    playerScoreSpan.textContent = playerScore;
+    robotScoreSpan.textContent = robotScore;
+  }
+
+  function updateTurnDisplay() {
+    turnDisplay.textContent = currentPlayer === 1 ? 'Player' : 'Robot';
+    turnDisplay.style.color = currentPlayer === 1 ? '#9b59b6' : '#f39c12';
+  }
+
+  // Robot AI
+  function robotMove() {
+    if (!gameActive) return;
+    
+    setTimeout(() => {
+      const activeStartPoint = getActiveStartPoint();
+      const criticalPoints = getCriticalPoints();
+      const settings = DIFFICULTY[difficulty];
+      
+      // Get all possible moves
+      let availableMoves = points.filter(p => 
+        isAdjacent(activeStartPoint, p) && 
+        !isEdgeUsed(activeStartPoint, p)
+      );
+
+      if (availableMoves.length === 0) {
+        endGame('Player');
+        return;
+      }
+
+      // Filter out critical points if needed
+      if (settings.avoidCritical) {
+        const safeMoves = availableMoves.filter(p => 
+          !criticalPoints.some(cp => cp.x === p.x && cp.y === p.y)
+        );
+        
+        // Only use critical moves if no other option (except Expert)
+        if (safeMoves.length > 0 || difficulty === 'expert') {
+          availableMoves = safeMoves;
+        }
+      }
+
+      if (availableMoves.length === 0) {
+        endGame('Player');
+        return;
+      }
+
+      let toPoint = null;
+      
+      // Strategy implementation
+      switch(settings.strategy) {
+        case 'random':
+          toPoint = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+          break;
+          
+        case 'balanced':
+          toPoint = availableMoves.reduce((best, current) => {
+            const currentDist = Math.sqrt(
+              Math.pow(current.x - (gridWidth-1)*cellSize, 2) + 
+              Math.pow(current.y - 0, 2)
+            );
+            const bestDist = best ? Math.sqrt(
+              Math.pow(best.x - (gridWidth-1)*cellSize, 2) + 
+              Math.pow(best.y - 0, 2)
+            ) : Infinity;
+            return currentDist < bestDist ? current : best;
+          }, null);
+          break;
+          
+        case 'blocker':
+          // Try to block player's options
+          toPoint = availableMoves.reduce((best, current) => {
+            const playerMovesAfter = points.filter(p => 
+              isAdjacent(current, p) && !isEdgeUsed(current, p)
+            ).length;
+            
+            const bestMoves = best ? points.filter(p => 
+              isAdjacent(best, p) && !isEdgeUsed(best, p)
+            ).length : Infinity;
+            
+            return playerMovesAfter < bestMoves ? current : best;
+          }, null);
+          break;
+          
+        case 'perfect':
+          // 1. Check for immediate win
+          toPoint = availableMoves.find(p => checkVictory(p));
+          
+          // 2. Check for moves that block player completely
+          if (!toPoint) {
+            toPoint = availableMoves.find(move => {
+              const playerMovesAfter = points.filter(p => 
+                isAdjacent(move, p) && !isEdgeUsed(move, p)
+              );
+              return playerMovesAfter.length === 0;
+            });
+          }
+          
+          // 3. Choose move that minimizes player options
+          if (!toPoint) {
+            toPoint = availableMoves.reduce((best, current) => {
+              const playerOptions = points.filter(p => 
+                isAdjacent(current, p) && !isEdgeUsed(current, p)
+              ).length;
+              
+              const bestOptions = best ? points.filter(p => 
+                isAdjacent(best, p) && !isEdgeUsed(best, p)
+              ).length : Infinity;
+              
+              return playerOptions < bestOptions ? current : best;
+            }, null);
+          }
+          break;
+      }
+
+      // Make the move
+      drawnEdges.push({
+        from: activeStartPoint,
+        to: toPoint || availableMoves[0],
+        player: 2
+      });
+
+      // Check victory
+      if (checkVictory(toPoint)) {
+        endGame('Robot');
+        drawGrid();
+        return;
+      }
+
+      // Switch turns
+      currentPlayer = 1;
+      updateTurnDisplay();
+      drawGrid();
+
+      // Check if player has moves left
+      const playerNextMoves = points.filter(p => 
+        isAdjacent(toPoint, p) && !isEdgeUsed(toPoint, p)
+      );
+      
+      if (playerNextMoves.length === 0) {
+        endGame('Robot');
+      }
+      
+    }, DIFFICULTY[difficulty].robotDelay);
+  }
+
+  // Click handler
+  function handleClick(e) {
+    if (!gameActive || currentPlayer !== 1) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    const clickedPoint = points.find(p => 
+      Math.sqrt((p.x - clickX)**2 + (p.y - clickY)**2) < 15
+    );
+    
+    if (!clickedPoint) return;
+    
+    const activeStartPoint = getActiveStartPoint();
+    
+    if (!activeStartPoint || !isAdjacent(activeStartPoint, clickedPoint) || isEdgeUsed(activeStartPoint, clickedPoint)) {
+      return;
+    }
+    
+    drawnEdges.push({
+      from: activeStartPoint,
+      to: clickedPoint,
+      player: currentPlayer
+    });
+    
+    if (checkVictory(clickedPoint)) {
+      endGame('Player');
+      drawGrid();
+      return;
+    }
+    
+    currentPlayer = 2;
+    updateTurnDisplay();
+    drawGrid();
+    
+    // Check if robot has moves left
+    const robotNextMoves = points.filter(p => 
+      isAdjacent(clickedPoint, p) && !isEdgeUsed(clickedPoint, p)
+    );
+    
+    if (robotNextMoves.length === 0) {
+      endGame('Player');
+    } else {
+      robotMove();
+    }
+  }
+
+  // New game
+  function startNewGame() {
+    document.querySelectorAll('.confetti').forEach(el => el.remove());
+    
+    gridWidth = parseInt(gridWidthInput.value) || 5;
+    gridHeight = parseInt(gridHeightInput.value) || 5;
+    
+    gridWidth = Math.max(3, Math.min(10, gridWidth));
+    gridHeight = Math.max(3, Math.min(10, gridHeight));
+    
+    gridWidthInput.value = gridWidth;
+    gridHeightInput.value = gridHeight;
+    
+    difficulty = difficultySelect.value;
+    adjustCanvasSize();
+    points = [];
+    drawnEdges = [];
+    currentPlayer = 1;
+    gameActive = true;
+    messageBox.textContent = '';
+    newGameBtn.style.display = 'none';
+    updateTurnDisplay();
+    drawGrid();
+  }
+
+  // Event listeners
+  canvas.addEventListener('click', handleClick);
+  newGameBtn.addEventListener('click', startNewGame);
+  difficultySelect.addEventListener('change', startNewGame);
+  gridWidthInput.addEventListener('change', startNewGame);
+  gridHeightInput.addEventListener('change', startNewGame);
+
+  // Start game
+  startNewGame();
+</script>
+</body>
+</html>
