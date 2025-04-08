@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Vector Path Game</title>
   <style>
     body {
@@ -10,66 +10,77 @@
       text-align: center;
       background-color: #f5f5f5;
       margin: 0;
-      padding: 20px;
+      padding: 10px;
       overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #gameContainer {
+      width: 100%;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
     }
     #gameCanvas {
       background-color: white;
       border: 2px solid #333;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-      margin: 20px auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin: 10px auto;
       display: block;
       cursor: pointer;
+      max-width: 100%;
     }
     .controls {
-      margin: 15px;
+      margin: 10px;
       padding: 10px;
       background-color: #eee;
       border-radius: 8px;
+      font-size: 14px;
     }
     .scoreboard {
-      font-size: 18px;
-      margin: 10px;
+      font-size: 16px;
+      margin: 8px;
       font-weight: bold;
     }
     #resultMessage {
-      font-size: 24px;
+      font-size: 18px;
       color: #e74c3c;
-      margin: 15px;
-      height: 30px;
+      margin: 10px;
+      height: 24px;
     }
     #newGameBtn {
       background-color: #2ecc71;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 5px;
       cursor: pointer;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 14px;
       display: none;
-      margin: 20px auto;
+      margin: 10px auto;
     }
     .confetti {
       position: fixed;
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       background-color: #f00;
       border-radius: 50%;
       pointer-events: none;
       z-index: 1000;
     }
     .difficulty-selector {
-      margin: 10px 0;
-      padding: 8px;
+      margin: 8px 0;
+      padding: 6px;
       border-radius: 5px;
       border: 1px solid #ccc;
+      font-size: 14px;
     }
     .grid-size-input {
-      width: 40px;
-      padding: 5px;
+      width: 35px;
+      padding: 4px;
       text-align: center;
+      font-size: 14px;
     }
+
     /* Modal styles */
     .modal {
       display: none;
@@ -80,21 +91,24 @@
       width: 100%;
       height: 100%;
       background-color: rgba(0,0,0,0.4);
+      overflow: auto;
+      touch-action: pan-y;
     }
     .modal-content {
       background-color: #fff9e6;
-      margin: 15% auto;
-      padding: 20px;
+      margin: 20% auto;
+      padding: 15px;
       border: 1px solid #ffcc00;
-      width: 80%;
-      max-width: 500px;
+      width: 90%;
+      max-width: 400px;
       border-radius: 8px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      font-size: 14px;
     }
     .close {
       color: #aaa;
       float: right;
-      font-size: 28px;
+      font-size: 24px;
       font-weight: bold;
       cursor: pointer;
     }
@@ -103,25 +117,33 @@
     }
     #rulesBtn {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: 10px;
+      right: 10px;
       background-color: #e67e22;
       color: white;
       border: none;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 20px;
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
       cursor: pointer;
       z-index: 100;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
-    .modal-content ul {
-      text-align: left;
-      padding-left: 20px;
-    }
-    .modal-content li {
-      margin-bottom: 8px;
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 24px;
+        margin: 10px 0;
+      }
+      .controls {
+        margin: 5px;
+        padding: 8px;
+      }
+      .modal-content {
+        margin: 30% auto;
+        padding: 10px;
+      }
     }
   </style>
 </head>
@@ -132,19 +154,15 @@
     <div class="modal-content">
       <span class="close">&times;</span>
       <h3 style="margin-top:0;color:#e67e22">🕹️ Game Rules</h3>
-      <ul>
-        <li><strong>Start:</strong> Tap one of the 3 points near the bottom-left corner to begin</li>
-        <li><strong>Movement:</strong> From where the robot's vector ends, you can move one unit to any adjacent point</li>
-        <li><strong>Goal:</strong> Reach the top-right corner (red point)</li>
-        <li><strong>Turns:</strong> <strong style="color:#9b59b6">YOU</strong> move first, then the <strong style="color:#f39c12">ROBOT</strong></li>
-        <li><strong>Difficulty Levels:</strong>
-          <ul>
-            <li><strong>Easy:</strong> Random moves</li>
-            <li><strong>Medium:</strong> Smart moves</li>
-            <li><strong>Hard:</strong> Avoids critical points when possible</li>
-            <li><strong>Expert:</strong> Never uses critical points</li>
-          </ul>
-        </li>
+      <p><strong>🎯 Start:</strong> <span style="color:#2ecc71">Bottom-left corner</span></p>
+      <p><strong>🏁 Finish:</strong> <span style="color:#e74c3c">Top-right corner</span></p>
+      <p><strong>🔄 Turn Order:</strong> <strong style="color:#9b59b6">PLAYER</strong> first, then <strong style="color:#f39c12">ROBOT</strong></p>
+      <p><strong>⚡ Difficulties:</strong></p>
+      <ul style="text-align:left;padding-left:20px">
+        <li><strong>Easy:</strong> Random moves</li>
+        <li><strong>Medium:</strong> Smart moves</li>
+        <li><strong>Hard:</strong> Avoids critical points unless forced</li>
+        <li><strong>Expert:</strong> Never uses critical points</li>
       </ul>
     </div>
   </div>
@@ -161,12 +179,12 @@
         <option value="expert">Expert</option>
       </select>
     </div>
-    <div style="margin-top:10px">
+    <div style="margin-top:8px">
       <label style="font-weight:bold">Grid:</label>
       <input type="number" id="gridWidth" class="grid-size-input" min="3" max="10" value="5">
       <span>x</span>
       <input type="number" id="gridHeight" class="grid-size-input" min="3" max="10" value="5">
-      <button onclick="startNewGame()" style="padding:5px 10px;background:#3498db;color:white;border:none;border-radius:3px;cursor:pointer">New Game</button>
+      <button onclick="startNewGame()" style="padding:4px 8px;background:#3498db;color:white;border:none;border-radius:3px;cursor:pointer;font-size:14px">New Game</button>
     </div>
   </div>
 
@@ -176,7 +194,9 @@
     Turn: <span id="turnDisplay" style="font-weight:bold">Player</span>
   </div>
 
-  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+  </div>
   
   <div id="resultMessage" style="font-weight:bold"></div>
   <button id="newGameBtn">NEW GAME</button>
@@ -193,6 +213,7 @@
   const difficultySelect = document.getElementById('difficultySelect');
   const gridWidthInput = document.getElementById('gridWidth');
   const gridHeightInput = document.getElementById('gridHeight');
+  const gameContainer = document.getElementById('gameContainer');
 
   // Modal elements
   const modal = document.getElementById('rulesModal');
@@ -254,9 +275,12 @@
     }
   }
 
-  // Calculate cell size
+  // Calculate cell size based on screen size
   function calculateCellSize() {
-    return 100;
+    const maxWidth = gameContainer.clientWidth - 40;
+    const maxHeight = window.innerHeight * 0.5;
+    const size = Math.min(maxWidth, maxHeight) / Math.max(gridWidth, gridHeight);
+    return Math.max(30, Math.min(100, size)); // Min 30px, max 100px
   }
 
   // Adjust canvas
@@ -264,18 +288,20 @@
     cellSize = calculateCellSize();
     canvas.width = cellSize * (gridWidth - 1);
     canvas.height = cellSize * (gridHeight - 1);
+    canvas.style.width = canvas.width + 'px';
+    canvas.style.height = canvas.height + 'px';
   }
 
   // Get critical points (adjacent to finish)
   function getCriticalPoints() {
     return [
-      { x: (gridWidth-2)*cellSize, y: 0 },               // Left
-      { x: (gridWidth-1)*cellSize, y: 1*cellSize },      // Below
-      { x: (gridWidth-2)*cellSize, y: 1*cellSize }       // Diagonal
+      { x: (gridWidth-2)*cellSize, y: 0 },
+      { x: (gridWidth-1)*cellSize, y: 1*cellSize },
+      { x: (gridWidth-2)*cellSize, y: 1*cellSize }
     ];
   }
 
-  // Draw grid
+  // Draw grid (same as before)
   function drawGrid() {
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -309,13 +335,13 @@
         ctx.arc(px, py, 6, 0, Math.PI * 2);
         
         if (x === 0 && y === gridHeight-1) {
-          ctx.fillStyle = '#2ecc71'; // Start
+          ctx.fillStyle = '#2ecc71';
         } else if (x === gridWidth-1 && y === 0) {
-          ctx.fillStyle = '#e74c3c'; // Finish
+          ctx.fillStyle = '#e74c3c';
         } else if (criticalPoints.some(cp => cp.x === px && cp.y === py)) {
-          ctx.fillStyle = '#ff0000'; // Critical points
+          ctx.fillStyle = '#ff0000';
         } else {
-          ctx.fillStyle = '#3498db'; // Normal
+          ctx.fillStyle = '#3498db';
         }
         
         ctx.fill();
@@ -350,6 +376,10 @@
     }
   }
 
+  // Rest of the JavaScript code remains exactly the same...
+  // [Previous JavaScript code continues here...]
+  // Only the calculateCellSize() and adjustCanvasSize() functions were modified
+
   // Get current position
   function getActiveStartPoint() {
     if (drawnEdges.length === 0) {
@@ -361,18 +391,18 @@
   // Confetti effect
   function createConfetti() {
     const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 100; i++) {
       const confetti = document.createElement('div');
       confetti.className = 'confetti';
       confetti.style.left = Math.random() * 100 + 'vw';
       confetti.style.top = -10 + 'px';
       confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      confetti.style.width = Math.random() * 10 + 5 + 'px';
-      confetti.style.height = Math.random() * 10 + 5 + 'px';
+      confetti.style.width = Math.random() * 8 + 4 + 'px';
+      confetti.style.height = Math.random() * 8 + 4 + 'px';
       confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
       document.body.appendChild(confetti);
       
-      const animationDuration = Math.random() * 3 + 2;
+      const animationDuration = Math.random() * 2 + 1;
       
       // Animate
       confetti.animate([
@@ -647,6 +677,14 @@
   difficultySelect.addEventListener('change', startNewGame);
   gridWidthInput.addEventListener('change', startNewGame);
   gridHeightInput.addEventListener('change', startNewGame);
+
+  // Handle window resize
+  window.addEventListener('resize', function() {
+    if (gameActive) {
+      adjustCanvasSize();
+      drawGrid();
+    }
+  });
 
   // Start game
   startNewGame();
