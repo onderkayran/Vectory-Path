@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Vector Path</title>
   <style>
     body {
@@ -11,6 +11,7 @@
       background: #f8f8f8;
       padding: 20px;
       margin: 0;
+      touch-action: manipulation;
     }
     canvas {
       border: none;
@@ -40,6 +41,7 @@
     input, select, button {
       font-size: 1.1rem;
       padding: 6px 10px;
+      touch-action: manipulation;
     }
     .info {
       font-weight: bold;
@@ -122,19 +124,382 @@
 
   <audio id="moveSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_b94e7c5f0f.mp3"></audio>
   <audio id="winSound" src="https://cdn.pixabay.com/audio/2022/03/14/audio_6474e3f8ba.mp3"></audio>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const turnInfo = document.getElementById("turnInfo");
+const difficultySelect = document.getElementById("difficulty");
+const helpModal = document.getElementById("helpModal");
+const moveSound = document.getElementById("moveSound");
+const winSound = document.getElementById("winSound");
 
-  <script>
-    // ... tüm oyun kodları burada kalıyor, sadece en aşağıya şu satırları ekliyoruz:
+let gridW = 5, gridH = 5;
+let points = [], edges = [], currentTurn = 1, gameOver = false, difficulty = 'expert', lastPoint = null;
+let blockedPoints = [];
 
-    canvas.addEventListener("click", handleClick);
-    canvas.addEventListener("touchstart", function(e) {
-      e.preventDefault(); // sayfanın scroll yapmasını engeller
-      handleClick(e.touches[0]); // dokunmayı click gibi işle
+function toggleHelp(show) {
+  helpModal.style.display = show ? 'block' : 'none';
+}
+
+function createGrid() {
+  points = [];
+  blockedPoints = [];
+  for (let y = 0; y < gridH; y++) {
+    for (let x = 0; x < gridW; x++) {
+      points.push({ x, y });
+    }
+  }
+  if (gridW >= 5 && gridH >= 5 && (gridW > 5 || gridH > 5)) {
+    const start = { x: 0, y: gridH - 1 };
+    const end = { x: gridW - 1, y: 0 };
+    while (blockedPoints.length < 3) {
+      const rx = Math.floor(Math.random() * gridW);
+      const ry = Math.floor(Math.random() * gridH);
+      const isStartOrEnd = (rx === start.x && ry === start.y) || (rx === end.x && ry === end.y);
+      const alreadyBlocked = blockedPoints.some(p => p.x === rx && p.y === ry);
+      if (!isStartOrEnd && !alreadyBlocked) blockedPoints.push({ x: rx, y: ry });
+    }
+  }
+}
+
+function isBlocked(p) {
+  return blockedPoints.some(b => b.x === p.x && b.y === p.y);
+}
+
+function toCanvas(p) {
+  const paddingX = canvas.width * 0.1;
+  const paddingY = canvas.height * 0.1;
+  const availableWidth = canvas.width - paddingX * 2;
+  const availableHeight = canvas.height - paddingY * 2;
+  
+  return {
+    x: paddingX + (p.x * (availableWidth / (gridW - 1))),
+    y: paddingY + (p.y * (availableHeight / (gridH - 1)))
+  };
+}
+
+function drawGrid() {
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  for (const edge of edges) {
+    const from = toCanvas(edge.from);
+    const to = toCanvas(edge.to);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.strokeStyle = edge.player === 1 ? '#9b59b6' : '#f39c12';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+  }
+  
+  ctx.font = '18px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  for (const p of points) {
+    const { x, y } = toCanvas(p);
+    
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = isBlocked(p) ? '#888' :
+                    (p.x === 0 && p.y === gridH - 1) ? '#2ecc71' :
+                    (p.x === gridW - 1 && p.y === 0) ? '#e74c3c' :
+                    (p === lastPoint) ? '#f1c40f' : '#3498db';
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    if (p.x === 0 && p.y === gridH - 1) {
+      ctx.fillText('S', x, y);
+    } else if (p.x === gridW - 1 && p.y === 0) {
+      ctx.fillText('E', x, y);
+    } else if (isBlocked(p)) {
+      ctx.fillText('X', x, y);
+    }
+  }
+}
+
+function isAdjacent(p1, p2) {
+  if (isBlocked(p2)) return false;
+  const dx = Math.abs(p1.x - p2.x);
+  const dy = Math.abs(p1.y - p2.y);
+  return (dx <= 1 && dy <= 1 && (dx + dy > 0));
+}
+
+function edgeExists(p1, p2) {
+  return edges.some(e => (e.from === p1 && e.to === p2) || (e.from === p2 && e.to === p1));
+}
+
+function isVictory(p) {
+  return p.x === gridW - 1 && p.y === 0;
+}
+
+function getMediumMove(from) {
+  const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+  const goal = { x: gridW - 1, y: 0 };
+  
+  const playerDistancePenalty = {};
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    
+    let minPlayerDistance = Infinity;
+    for (const playerMove of playerOptions) {
+      const dist = Math.hypot(goal.x - playerMove.x, goal.y - playerMove.y);
+      if (dist < minPlayerDistance) minPlayerDistance = dist;
+    }
+    playerDistancePenalty[move.x + "," + move.y] = minPlayerDistance;
+    edges.pop();
+  }
+
+  return options.reduce((best, current) => 
+    playerDistancePenalty[current.x + "," + current.y] > 
+    playerDistancePenalty[best.x + "," + best.y] ? current : best
+  );
+}
+
+function getHardMove(from) {
+  const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+  const goal = { x: gridW - 1, y: 0 };
+  
+  const playerDistanceScores = {};
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    
+    let minPlayerDistance = Infinity;
+    for (const playerMove of playerOptions) {
+      const dist = Math.hypot(goal.x - playerMove.x, goal.y - playerMove.y);
+      if (dist < minPlayerDistance) minPlayerDistance = dist;
+    }
+    playerDistanceScores[move.x + "," + move.y] = minPlayerDistance;
+    edges.pop();
+  }
+
+  const restrictionScores = {};
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    restrictionScores[move.x + "," + move.y] = -playerOptions.length * 5;
+    edges.pop();
+  }
+
+  for (const move of options) {
+    if (isVictory(move)) return move;
+  }
+
+  let bestMove = null;
+  let bestScore = -Infinity;
+  for (const move of options) {
+    const score = 
+      playerDistanceScores[move.x + "," + move.y] * 3 +
+      restrictionScores[move.x + "," + move.y] +
+      (Math.random() * 2);
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+
+  return bestMove || options[0];
+}
+
+function getExpertMove(from) {
+  const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+  
+  for (const move of options) {
+    if (isVictory(move)) return move;
+  }
+  
+  let bestMove = null;
+  let bestScore = -Infinity;
+  
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    let playerCanWin = false;
+    let playerMoveCount = 0;
+    
+    for (const playerMove of playerOptions) {
+      playerMoveCount++;
+      if (isVictory(playerMove)) {
+        playerCanWin = true;
+        break;
+      }
+    }
+    
+    let score = 0;
+    if (playerCanWin) {
+      score = -1000;
+    } else if (playerMoveCount === 0) {
+      score = 1000;
+    } else {
+      const goal = { x: gridW - 1, y: 0 };
+      score = -Math.hypot(goal.x - move.x, goal.y - move.y);
+      score -= playerMoveCount * 10;
+    }
+    
+    edges.pop();
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+  
+  return bestMove || options[0];
+}
+
+function getBestMove(from) {
+  const settings = {
+    easy: { mistakeRate: 0.5 },
+    medium: { mistakeRate: 0.3 },
+    hard: { mistakeRate: 0.04 },
+    expert: { mistakeRate: 0.05 }
+  }[difficulty];
+  
+  if (Math.random() < settings.mistakeRate) {
+    const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+    return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
+  }
+  
+  switch(difficulty) {
+    case 'expert': return getExpertMove(from);
+    case 'hard': return getHardMove(from);
+    case 'medium': return getMediumMove(from);
+    default: 
+      const randomOptions = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+      return randomOptions.length > 0 ? randomOptions[Math.floor(Math.random() * randomOptions.length)] : null;
+  }
+}
+
+function endGame(winner) {
+  gameOver = true;
+  turnInfo.textContent = winner + ' wins!';
+  drawGrid();
+  winSound.play();
+  createConfetti();
+  showVictoryText(winner);
+}
+
+function showVictoryText(winner) {
+  const msg = document.createElement('div');
+  msg.className = 'victory-text';
+  msg.textContent = winner.toUpperCase() + ' WINS!';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
+function createConfetti() {
+  const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f39c12'];
+  for (let i = 0; i < 100; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.top = '-10px';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    document.body.appendChild(confetti);
+    const fall = confetti.animate([
+      { transform: 'translateY(0)', opacity: 1 },
+      { transform: 'translateY(100vh)', opacity: 0 }
+    ], {
+      duration: Math.random() * 2000 + 2000,
+      easing: 'ease-in-out'
     });
+    fall.onfinish = () => confetti.remove();
+  }
+}
 
-    startGame(); // oyunu başlat
-  </script>
+function handleInteraction(e) {
+  if (gameOver || currentTurn !== 1) return;
+  
+  // Mobil ve masaüstü için koordinatları al
+  const rect = canvas.getBoundingClientRect();
+  let clientX, clientY;
+  
+  if (e.type === 'touchstart' || e.type === 'touchend') {
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    } else {
+      return;
+    }
+    // Dokunmatik olaylarda sayfa kaydırmayı engelle
+    e.preventDefault();
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  
+  const clickX = clientX - rect.left;
+  const clickY = clientY - rect.top;
+  
+  const clicked = points.find(p => {
+    const canvasPos = toCanvas(p);
+    return Math.abs(canvasPos.x - clickX) < 20 && Math.abs(canvasPos.y - clickY) < 20;
+  });
+  
+  if (!clicked || !lastPoint || !isAdjacent(lastPoint, clicked) || edgeExists(lastPoint, clicked)) return;
+  
+  edges.push({ from: lastPoint, to: clicked, player: 1 });
+  lastPoint = clicked;
+  moveSound.play();
+  drawGrid();
+  
+  if (isVictory(clicked)) return endGame('Player');
+  const options = points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p));
+  if (options.length === 0) return endGame('Player');
+  
+  currentTurn = 2;
+  turnInfo.textContent = "Robot's Turn";
+  setTimeout(robotMove, 500);
+}
 
-  <!-- Not: Yukarıdaki <script> bloğunun tamamı orijinal dosyadaki tüm JavaScript'leri içermelidir -->
+function robotMove() {
+  const options = points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p));
+  if (options.length === 0) return endGame('Player');
+  
+  const move = getBestMove(lastPoint);
+  if (!move) return endGame('Player');
+  
+  edges.push({ from: lastPoint, to: move, player: 2 });
+  lastPoint = move;
+  moveSound.play();
+  drawGrid();
+  
+  if (isVictory(move)) return endGame('Robot');
+  if (points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p)).length === 0) return endGame('Robot');
+  
+  currentTurn = 1;
+  turnInfo.textContent = "Player's Turn";
+}
+
+function startGame() {
+  gridW = parseInt(document.getElementById("gridW").value);
+  gridH = parseInt(document.getElementById("gridH").value);
+  difficulty = difficultySelect.value;
+  canvas.width = 500;
+  canvas.height = 500;
+  createGrid();
+  edges = [];
+  currentTurn = 1;
+  gameOver = false;
+  lastPoint = points.find(p => p.x === 0 && p.y === gridH - 1);
+  turnInfo.textContent = "Player's Turn";
+  drawGrid();
+}
+
+// Hem dokunmatik hem de tıklama olaylarını dinle
+canvas.addEventListener("click", handleInteraction);
+canvas.addEventListener("touchstart", handleInteraction, { passive: false });
+canvas.addEventListener("touchend", handleInteraction, { passive: false });
+
+startGame();
+</script>
 </body>
 </html>
