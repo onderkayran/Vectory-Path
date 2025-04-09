@@ -1,693 +1,478 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Vector Path Game</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vector Path</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       text-align: center;
-      background-color: #f5f5f5;
+      background: #f8f8f8;
+      padding: 20px;
       margin: 0;
-      padding: 10px;
-      overflow-x: hidden;
-      touch-action: manipulation;
     }
-    #gameContainer {
-      width: 100%;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    #gameCanvas {
-      background-color: white;
-      border: 2px solid #333;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin: 10px auto;
+    canvas {
+      border: none;
+      background: white;
       display: block;
-      cursor: pointer;
-      max-width: 100%;
+      margin: 20px auto;
+      width: 90vw;
+      height: auto;
+      max-width: 500px;
+      touch-action: manipulation;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+    .game-container {
+      background: white;
+      padding: 20px;
+      display: inline-block;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
     }
     .controls {
-      margin: 10px;
-      padding: 10px;
-      background-color: #eee;
-      border-radius: 8px;
-      font-size: 14px;
+      margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
     }
-    .scoreboard {
-      font-size: 16px;
-      margin: 8px;
+    input, select, button {
+      font-size: 1.1rem;
+      padding: 6px 10px;
+    }
+    .info {
       font-weight: bold;
+      margin-top: 10px;
+      font-size: 1.2rem;
     }
-    #resultMessage {
-      font-size: 18px;
-      color: #e74c3c;
-      margin: 10px;
-      height: 24px;
-    }
-    #newGameBtn {
-      background-color: #2ecc71;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 14px;
-      display: none;
-      margin: 10px auto;
-    }
-    .confetti {
-      position: fixed;
-      width: 8px;
-      height: 8px;
-      background-color: #f00;
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 1000;
-    }
-    .difficulty-selector {
-      margin: 8px 0;
-      padding: 6px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-    }
-    .grid-size-input {
-      width: 35px;
-      padding: 4px;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.4);
-      overflow: auto;
-      touch-action: pan-y;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border: 2px solid #444;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      z-index: 10000;
+      max-width: 90vw;
     }
-    .modal-content {
-      background-color: #fff9e6;
-      margin: 20% auto;
-      padding: 15px;
-      border: 1px solid #ffcc00;
-      width: 90%;
-      max-width: 400px;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-      font-size: 14px;
-    }
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 24px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .close:hover {
-      color: black;
-    }
-    #rulesBtn {
+    .modal h2 { margin-top: 0; }
+    .modal button { margin-top: 10px; }
+    .confetti {
       position: fixed;
-      top: 10px;
-      right: 10px;
-      background-color: #e67e22;
-      color: white;
-      border: none;
+      width: 10px;
+      height: 10px;
+      background-color: #f39c12;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      font-size: 16px;
-      cursor: pointer;
-      z-index: 100;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      pointer-events: none;
+      z-index: 9999;
     }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 24px;
-        margin: 10px 0;
-      }
-      .controls {
-        margin: 5px;
-        padding: 8px;
-      }
-      .modal-content {
-        margin: 30% auto;
-        padding: 10px;
-      }
+    .victory-text {
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      color: #27ae60;
+      font-weight: bold;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+      animation: fade 2s ease;
+      z-index: 10001;
+    }
+    @keyframes fade {
+      0% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+      100% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
     }
   </style>
 </head>
 <body>
-  <button id="rulesBtn">?</button>
-
-  <div id="rulesModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h3 style="margin-top:0;color:#e67e22">🕹️ Game Rules</h3>
-      <p><strong>🎯 Start:</strong> <span style="color:#2ecc71">Bottom-left corner</span></p>
-      <p><strong>🏁 Finish:</strong> <span style="color:#e74c3c">Top-right corner</span></p>
-      <p><strong>🔄 Turn Order:</strong> <strong style="color:#9b59b6">PLAYER</strong> first, then <strong style="color:#f39c12">ROBOT</strong></p>
-      <p><strong>⚡ Difficulties:</strong></p>
-      <ul style="text-align:left;padding-left:20px">
-        <li><strong>Easy:</strong> Random moves</li>
-        <li><strong>Medium:</strong> Smart moves</li>
-        <li><strong>Hard:</strong> Avoids critical points unless forced</li>
-        <li><strong>Expert:</strong> Never uses critical points</li>
-      </ul>
-    </div>
-  </div>
-
-  <h1 style="color:#3498db">Vector Path Game</h1>
-  
-  <div class="controls">
-    <div>
-      <span style="font-weight:bold">Difficulty:</span>
-      <select id="difficultySelect" class="difficulty-selector">
+  <div class="game-container">
+    <h1>Vector Path</h1>
+    <div class="controls">
+      Grid:
+      <input id="gridW" type="number" value="5" min="4" max="10"> x
+      <input id="gridH" type="number" value="5" min="4" max="10">
+      Difficulty:
+      <select id="difficulty">
         <option value="easy">Easy</option>
         <option value="medium">Medium</option>
         <option value="hard">Hard</option>
-        <option value="expert">Expert</option>
+        <option value="expert" selected>Expert</option>
       </select>
+      <button onclick="startGame()">Start</button>
+      <button onclick="toggleHelp(true)">Help</button>
     </div>
-    <div style="margin-top:8px">
-      <label style="font-weight:bold">Grid:</label>
-      <input type="number" id="gridWidth" class="grid-size-input" min="3" max="10" value="5">
-      <span>x</span>
-      <input type="number" id="gridHeight" class="grid-size-input" min="3" max="10" value="5">
-      <button onclick="startNewGame()" style="padding:4px 8px;background:#3498db;color:white;border:none;border-radius:3px;cursor:pointer;font-size:14px">New Game</button>
-    </div>
+
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <div class="info" id="turnInfo">Player's Turn</div>
   </div>
 
-  <div class="scoreboard">
-    <span style="color:#9b59b6">Player: <span id="playerScore">0</span></span> - 
-    <span style="color:#f39c12">Robot: <span id="robotScore">0</span></span> | 
-    Turn: <span id="turnDisplay" style="font-weight:bold">Player</span>
+  <div class="modal" id="helpModal">
+    <h2>How to Play?</h2>
+    <p>The player and the robot take turns drawing lines.</p>
+    <p>Goal: Reach the top-right corner from the bottom-left corner.</p>
+    <p>Each line must start from the end of the previous one.</p>
+    <p>The player who cannot make a move loses.</p>
+    <button onclick="toggleHelp(false)">Close</button>
   </div>
 
-  <div id="gameContainer">
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
-  </div>
-  
-  <div id="resultMessage" style="font-weight:bold"></div>
-  <button id="newGameBtn">NEW GAME</button>
-
+  <audio id="moveSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_b94e7c5f0f.mp3"></audio>
+  <audio id="winSound" src="https://cdn.pixabay.com/audio/2022/03/14/audio_6474e3f8ba.mp3"></audio>
 <script>
-  // Game elements
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  const messageBox = document.getElementById('resultMessage');
-  const turnDisplay = document.getElementById('turnDisplay');
-  const playerScoreSpan = document.getElementById('playerScore');
-  const robotScoreSpan = document.getElementById('robotScore');
-  const newGameBtn = document.getElementById('newGameBtn');
-  const difficultySelect = document.getElementById('difficultySelect');
-  const gridWidthInput = document.getElementById('gridWidth');
-  const gridHeightInput = document.getElementById('gridHeight');
-  const gameContainer = document.getElementById('gameContainer');
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const turnInfo = document.getElementById("turnInfo");
+const difficultySelect = document.getElementById("difficulty");
+const helpModal = document.getElementById("helpModal");
+const moveSound = document.getElementById("moveSound");
+const winSound = document.getElementById("winSound");
 
-  // Modal elements
-  const modal = document.getElementById('rulesModal');
-  const rulesBtn = document.getElementById('rulesBtn');
-  const span = document.getElementsByClassName('close')[0];
+let gridW = 5, gridH = 5;
+let points = [], edges = [], currentTurn = 1, gameOver = false, difficulty = 'expert', lastPoint = null;
+let blockedPoints = [];
 
-  // Game variables
-  let gridWidth = 5;
-  let gridHeight = 5;
-  let cellSize;
-  let points = [];
-  let drawnEdges = [];
-  let currentPlayer = 1;
-  let playerScore = 0;
-  let robotScore = 0;
-  let gameActive = true;
-  let difficulty = 'easy';
+function toggleHelp(show) {
+  helpModal.style.display = show ? 'block' : 'none';
+}
 
-  // Difficulty settings
-  const DIFFICULTY = {
-    easy: {
-      robotDelay: 1200,
-      strategy: 'random',
-      mistakeRate: 0.4,
-      avoidCritical: false
-    },
-    medium: {
-      robotDelay: 800,
-      strategy: 'balanced',
-      mistakeRate: 0.2,
-      avoidCritical: false
-    },
-    hard: {
-      robotDelay: 500,
-      strategy: 'blocker',
-      mistakeRate: 0.1,
-      avoidCritical: true
-    },
-    expert: {
-      robotDelay: 300,
-      strategy: 'perfect',
-      mistakeRate: 0,
-      avoidCritical: true
+function createGrid() {
+  points = [];
+  blockedPoints = [];
+  for (let y = 0; y < gridH; y++) {
+    for (let x = 0; x < gridW; x++) {
+      points.push({ x, y });
     }
+  }
+  if (gridW >= 5 && gridH >= 5 && (gridW > 5 || gridH > 5)) {
+    const start = { x: 0, y: gridH - 1 };
+    const end = { x: gridW - 1, y: 0 };
+    while (blockedPoints.length < 3) {
+      const rx = Math.floor(Math.random() * gridW);
+      const ry = Math.floor(Math.random() * gridH);
+      const isStartOrEnd = (rx === start.x && ry === start.y) || (rx === end.x && ry === end.y);
+      const alreadyBlocked = blockedPoints.some(p => p.x === rx && p.y === ry);
+      if (!isStartOrEnd && !alreadyBlocked) blockedPoints.push({ x: rx, y: ry });
+    }
+  }
+}
+
+function isBlocked(p) {
+  return blockedPoints.some(b => b.x === p.x && b.y === p.y);
+}
+
+function toCanvas(p) {
+  const paddingX = canvas.width * 0.1;
+  const paddingY = canvas.height * 0.1;
+  const availableWidth = canvas.width - paddingX * 2;
+  const availableHeight = canvas.height - paddingY * 2;
+  
+  return {
+    x: paddingX + (p.x * (availableWidth / (gridW - 1))),
+    y: paddingY + (p.y * (availableHeight / (gridH - 1)))
   };
+}
 
-  // Modal functions
-  rulesBtn.onclick = function() {
-    modal.style.display = "block";
+function drawGrid() {
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  for (const edge of edges) {
+    const from = toCanvas(edge.from);
+    const to = toCanvas(edge.to);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.strokeStyle = edge.player === 1 ? '#9b59b6' : '#f39c12';
+    ctx.lineWidth = 6;
+    ctx.stroke();
   }
-
-  span.onclick = function() {
-    modal.style.display = "none";
-  }
-
-  window.onclick = function(event) {
-    if (event.target == modal) {
-      modal.style.display = "none";
-    }
-  }
-
-  // Calculate cell size based on screen size
-  function calculateCellSize() {
-    const maxWidth = gameContainer.clientWidth - 40;
-    const maxHeight = window.innerHeight * 0.5;
-    const size = Math.min(maxWidth, maxHeight) / Math.max(gridWidth, gridHeight);
-    return Math.max(30, Math.min(100, size)); // Min 30px, max 100px
-  }
-
-  // Adjust canvas
-  function adjustCanvasSize() {
-    cellSize = calculateCellSize();
-    canvas.width = cellSize * (gridWidth - 1);
-    canvas.height = cellSize * (gridHeight - 1);
-    canvas.style.width = canvas.width + 'px';
-    canvas.style.height = canvas.height + 'px';
-  }
-
-  // Get critical points (adjacent to finish)
-  function getCriticalPoints() {
-    return [
-      { x: (gridWidth-2)*cellSize, y: 0 },
-      { x: (gridWidth-1)*cellSize, y: 1*cellSize },
-      { x: (gridWidth-2)*cellSize, y: 1*cellSize }
-    ];
-  }
-
-  // Draw grid (same as before)
-  function drawGrid() {
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Grid lines
-    ctx.strokeStyle = '#eee';
-    ctx.lineWidth = 1;
-    for (let y = 0; y < gridHeight; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * cellSize);
-      ctx.lineTo(canvas.width, y * cellSize);
-      ctx.stroke();
-    }
-    for (let x = 0; x < gridWidth; x++) {
-      ctx.beginPath();
-      ctx.moveTo(x * cellSize, 0);
-      ctx.lineTo(x * cellSize, canvas.height);
-      ctx.stroke();
-    }
-
-    // Draw points
-    points = [];
-    const criticalPoints = getCriticalPoints();
-    for (let y = 0; y < gridHeight; y++) {
-      for (let x = 0; x < gridWidth; x++) {
-        const px = x * cellSize;
-        const py = y * cellSize;
-        points.push({x: px, y: py});
-
-        ctx.beginPath();
-        ctx.arc(px, py, 6, 0, Math.PI * 2);
-        
-        if (x === 0 && y === gridHeight-1) {
-          ctx.fillStyle = '#2ecc71';
-        } else if (x === gridWidth-1 && y === 0) {
-          ctx.fillStyle = '#e74c3c';
-        } else if (criticalPoints.some(cp => cp.x === px && cp.y === py)) {
-          ctx.fillStyle = '#ff0000';
-        } else {
-          ctx.fillStyle = '#3498db';
-        }
-        
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(px, py, 6, 0, Math.PI * 2);
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-    }
-
-    // Draw paths
-    for (const edge of drawnEdges) {
-      ctx.beginPath();
-      ctx.moveTo(edge.from.x, edge.from.y);
-      ctx.lineTo(edge.to.x, edge.to.y);
-      ctx.strokeStyle = edge.player === 1 ? '#9b59b6' : '#f39c12';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-    }
-
-    // Highlight active point
-    if (gameActive) {
-      const activeStartPoint = getActiveStartPoint();
-      if (activeStartPoint) {
-        ctx.beginPath();
-        ctx.arc(activeStartPoint.x, activeStartPoint.y, 10, 0, Math.PI * 2);
-        ctx.strokeStyle = currentPlayer === 1 ? '#9b59b6' : '#f39c12';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      }
-    }
-  }
-
-  // Rest of the JavaScript code remains exactly the same...
-  // [Previous JavaScript code continues here...]
-  // Only the calculateCellSize() and adjustCanvasSize() functions were modified
-
-  // Get current position
-  function getActiveStartPoint() {
-    if (drawnEdges.length === 0) {
-      return points.find(p => p.x === 0 && p.y === (gridHeight-1)*cellSize);
-    }
-    return drawnEdges[drawnEdges.length - 1].to;
-  }
-
-  // Confetti effect
-  function createConfetti() {
-    const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
-    for (let i = 0; i < 100; i++) {
-      const confetti = document.createElement('div');
-      confetti.className = 'confetti';
-      confetti.style.left = Math.random() * 100 + 'vw';
-      confetti.style.top = -10 + 'px';
-      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      confetti.style.width = Math.random() * 8 + 4 + 'px';
-      confetti.style.height = Math.random() * 8 + 4 + 'px';
-      confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-      document.body.appendChild(confetti);
-      
-      const animationDuration = Math.random() * 2 + 1;
-      
-      // Animate
-      confetti.animate([
-        { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
-        { transform: `translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
-      ], {
-        duration: animationDuration * 1000,
-        easing: 'cubic-bezier(0.1,0.8,0.4,1)'
-      });
-      
-      // Remove after animation
-      setTimeout(() => confetti.remove(), animationDuration * 1000);
-    }
-  }
-
-  // Game logic
-  function isAdjacent(p1, p2) {
-    const dx = Math.abs(p1.x - p2.x) / cellSize;
-    const dy = Math.abs(p1.y - p2.y) / cellSize;
-    return (dx <= 1 && dy <= 1) && (dx + dy > 0);
-  }
-
-  function isEdgeUsed(p1, p2) {
-    return drawnEdges.some(e => 
-      (e.from.x === p1.x && e.from.y === p1.y && e.to.x === p2.x && e.to.y === p2.y) ||
-      (e.from.x === p2.x && e.from.y === p2.y && e.to.x === p1.x && e.to.y === p1.y)
-    );
-  }
-
-  function checkVictory(point) {
-    return point && point.x === (gridWidth-1)*cellSize && point.y === 0;
-  }
-
-  function endGame(winner) {
-    messageBox.textContent = `🎉 ${winner} wins! 🎉`;
-    messageBox.style.color = winner === 'Player' ? '#2ecc71' : '#e74c3c';
+  
+  ctx.font = '18px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  for (const p of points) {
+    const { x, y } = toCanvas(p);
     
-    if (winner === 'Player') {
-      playerScore++;
-      createConfetti();
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = isBlocked(p) ? '#888' :
+                    (p.x === 0 && p.y === gridH - 1) ? '#2ecc71' :
+                    (p.x === gridW - 1 && p.y === 0) ? '#e74c3c' :
+                    (p === lastPoint) ? '#f1c40f' : '#3498db';
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    if (p.x === 0 && p.y === gridH - 1) {
+      ctx.fillText('S', x, y);
+    } else if (p.x === gridW - 1 && p.y === 0) {
+      ctx.fillText('E', x, y);
+    } else if (isBlocked(p)) {
+      ctx.fillText('X', x, y);
+    }
+  }
+}
+
+function isAdjacent(p1, p2) {
+  if (isBlocked(p2)) return false;
+  const dx = Math.abs(p1.x - p2.x);
+  const dy = Math.abs(p1.y - p2.y);
+  return (dx <= 1 && dy <= 1 && (dx + dy > 0));
+}
+
+function edgeExists(p1, p2) {
+  return edges.some(e => (e.from === p1 && e.to === p2) || (e.from === p2 && e.to === p1));
+}
+
+function isVictory(p) {
+  return p.x === gridW - 1 && p.y === 0;
+}
+
+function getMediumMove(from) {
+  const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+  const goal = { x: gridW - 1, y: 0 };
+  
+  const playerDistancePenalty = {};
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    
+    let minPlayerDistance = Infinity;
+    for (const playerMove of playerOptions) {
+      const dist = Math.hypot(goal.x - playerMove.x, goal.y - playerMove.y);
+      if (dist < minPlayerDistance) minPlayerDistance = dist;
+    }
+    playerDistancePenalty[move.x + "," + move.y] = minPlayerDistance;
+    edges.pop();
+  }
+
+  return options.reduce((best, current) => 
+    playerDistancePenalty[current.x + "," + current.y] > 
+    playerDistancePenalty[best.x + "," + best.y] ? current : best
+  );
+}
+
+function getHardMove(from) {
+  const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+  const goal = { x: gridW - 1, y: 0 };
+  
+  const playerDistanceScores = {};
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    
+    let minPlayerDistance = Infinity;
+    for (const playerMove of playerOptions) {
+      const dist = Math.hypot(goal.x - playerMove.x, goal.y - playerMove.y);
+      if (dist < minPlayerDistance) minPlayerDistance = dist;
+    }
+    playerDistanceScores[move.x + "," + move.y] = minPlayerDistance;
+    edges.pop();
+  }
+
+  const restrictionScores = {};
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    restrictionScores[move.x + "," + move.y] = -playerOptions.length * 5;
+    edges.pop();
+  }
+
+  for (const move of options) {
+    if (isVictory(move)) return move;
+  }
+
+  let bestMove = null;
+  let bestScore = -Infinity;
+  for (const move of options) {
+    const score = 
+      playerDistanceScores[move.x + "," + move.y] * 3 +
+      restrictionScores[move.x + "," + move.y] +
+      (Math.random() * 2);
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+
+  return bestMove || options[0];
+}
+
+function getExpertMove(from) {
+  const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+  
+  for (const move of options) {
+    if (isVictory(move)) return move;
+  }
+  
+  let bestMove = null;
+  let bestScore = -Infinity;
+  
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    
+    const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
+    let playerCanWin = false;
+    let playerMoveCount = 0;
+    
+    for (const playerMove of playerOptions) {
+      playerMoveCount++;
+      if (isVictory(playerMove)) {
+        playerCanWin = true;
+        break;
+      }
+    }
+    
+    let score = 0;
+    if (playerCanWin) {
+      score = -1000;
+    } else if (playerMoveCount === 0) {
+      score = 1000;
     } else {
-      robotScore++;
+      const goal = { x: gridW - 1, y: 0 };
+      score = -Math.hypot(goal.x - move.x, goal.y - move.y);
+      score -= playerMoveCount * 10;
     }
     
-    updateScores();
-    gameActive = false;
-    newGameBtn.style.display = 'block';
-  }
-
-  function updateScores() {
-    playerScoreSpan.textContent = playerScore;
-    robotScoreSpan.textContent = robotScore;
-  }
-
-  function updateTurnDisplay() {
-    turnDisplay.textContent = currentPlayer === 1 ? 'Player' : 'Robot';
-    turnDisplay.style.color = currentPlayer === 1 ? '#9b59b6' : '#f39c12';
-  }
-
-  // Robot AI
-  function robotMove() {
-    if (!gameActive) return;
+    edges.pop();
     
-    setTimeout(() => {
-      const activeStartPoint = getActiveStartPoint();
-      const criticalPoints = getCriticalPoints();
-      const settings = DIFFICULTY[difficulty];
-      
-      // Get all possible moves
-      let availableMoves = points.filter(p => 
-        isAdjacent(activeStartPoint, p) && 
-        !isEdgeUsed(activeStartPoint, p)
-      );
-
-      if (availableMoves.length === 0) {
-        endGame('Player');
-        return;
-      }
-
-      // Filter out critical points if needed
-      if (settings.avoidCritical) {
-        const safeMoves = availableMoves.filter(p => 
-          !criticalPoints.some(cp => cp.x === p.x && cp.y === p.y)
-        );
-        
-        // Only use critical moves if no other option (except Expert)
-        if (safeMoves.length > 0 || difficulty === 'expert') {
-          availableMoves = safeMoves;
-        }
-      }
-
-      if (availableMoves.length === 0) {
-        endGame('Player');
-        return;
-      }
-
-      let toPoint = null;
-      
-      // Strategy implementation
-      switch(settings.strategy) {
-        case 'random':
-          toPoint = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-          break;
-          
-        case 'balanced':
-          toPoint = availableMoves.reduce((best, current) => {
-            const currentDist = Math.sqrt(
-              Math.pow(current.x - (gridWidth-1)*cellSize, 2) + 
-              Math.pow(current.y - 0, 2)
-            );
-            const bestDist = best ? Math.sqrt(
-              Math.pow(best.x - (gridWidth-1)*cellSize, 2) + 
-              Math.pow(best.y - 0, 2)
-            ) : Infinity;
-            return currentDist < bestDist ? current : best;
-          }, null);
-          break;
-          
-        case 'blocker':
-          // Try to block player's options
-          toPoint = availableMoves.reduce((best, current) => {
-            const playerMovesAfter = points.filter(p => 
-              isAdjacent(current, p) && !isEdgeUsed(current, p)
-            ).length;
-            
-            const bestMoves = best ? points.filter(p => 
-              isAdjacent(best, p) && !isEdgeUsed(best, p)
-            ).length : Infinity;
-            
-            return playerMovesAfter < bestMoves ? current : best;
-          }, null);
-          break;
-          
-        case 'perfect':
-          // 1. Check for immediate win
-          toPoint = availableMoves.find(p => checkVictory(p));
-          
-          // 2. Check for moves that block player completely
-          if (!toPoint) {
-            toPoint = availableMoves.find(move => {
-              const playerMovesAfter = points.filter(p => 
-                isAdjacent(move, p) && !isEdgeUsed(move, p)
-              );
-              return playerMovesAfter.length === 0;
-            });
-          }
-          
-          // 3. Choose move that minimizes player options
-          if (!toPoint) {
-            toPoint = availableMoves.reduce((best, current) => {
-              const playerOptions = points.filter(p => 
-                isAdjacent(current, p) && !isEdgeUsed(current, p)
-              ).length;
-              
-              const bestOptions = best ? points.filter(p => 
-                isAdjacent(best, p) && !isEdgeUsed(best, p)
-              ).length : Infinity;
-              
-              return playerOptions < bestOptions ? current : best;
-            }, null);
-          }
-          break;
-      }
-
-      // Make the move
-      drawnEdges.push({
-        from: activeStartPoint,
-        to: toPoint || availableMoves[0],
-        player: 2
-      });
-
-      // Check victory
-      if (checkVictory(toPoint)) {
-        endGame('Robot');
-        drawGrid();
-        return;
-      }
-
-      // Switch turns
-      currentPlayer = 1;
-      updateTurnDisplay();
-      drawGrid();
-
-      // Check if player has moves left
-      const playerNextMoves = points.filter(p => 
-        isAdjacent(toPoint, p) && !isEdgeUsed(toPoint, p)
-      );
-      
-      if (playerNextMoves.length === 0) {
-        endGame('Robot');
-      }
-      
-    }, DIFFICULTY[difficulty].robotDelay);
-  }
-
-  // Click handler
-  function handleClick(e) {
-    if (!gameActive || currentPlayer !== 1) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-    
-    const clickedPoint = points.find(p => 
-      Math.sqrt((p.x - clickX)**2 + (p.y - clickY)**2) < 15
-    );
-    
-    if (!clickedPoint) return;
-    
-    const activeStartPoint = getActiveStartPoint();
-    
-    if (!activeStartPoint || !isAdjacent(activeStartPoint, clickedPoint) || isEdgeUsed(activeStartPoint, clickedPoint)) {
-      return;
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
     }
-    
-    drawnEdges.push({
-      from: activeStartPoint,
-      to: clickedPoint,
-      player: currentPlayer
+  }
+  
+  return bestMove || options[0];
+}
+
+function getBestMove(from) {
+  const settings = {
+    easy: { mistakeRate: 0.5 },
+    medium: { mistakeRate: 0.3 },
+    hard: { mistakeRate: 0.04 },
+    expert: { mistakeRate: 0.05 }
+  }[difficulty];
+  
+  if (Math.random() < settings.mistakeRate) {
+    const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+    return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
+  }
+  
+  switch(difficulty) {
+    case 'expert': return getExpertMove(from);
+    case 'hard': return getHardMove(from);
+    case 'medium': return getMediumMove(from);
+    default: 
+      const randomOptions = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
+      return randomOptions.length > 0 ? randomOptions[Math.floor(Math.random() * randomOptions.length)] : null;
+  }
+}
+
+function endGame(winner) {
+  gameOver = true;
+  turnInfo.textContent = winner + ' wins!';
+  drawGrid();
+  winSound.play();
+  createConfetti();
+  showVictoryText(winner);
+}
+
+function showVictoryText(winner) {
+  const msg = document.createElement('div');
+  msg.className = 'victory-text';
+  msg.textContent = winner.toUpperCase() + ' WINS!';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
+function createConfetti() {
+  const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f39c12'];
+  for (let i = 0; i < 100; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.top = '-10px';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    document.body.appendChild(confetti);
+    const fall = confetti.animate([
+      { transform: 'translateY(0)', opacity: 1 },
+      { transform: 'translateY(100vh)', opacity: 0 }
+    ], {
+      duration: Math.random() * 2000 + 2000,
+      easing: 'ease-in-out'
     });
-    
-    if (checkVictory(clickedPoint)) {
-      endGame('Player');
-      drawGrid();
-      return;
-    }
-    
-    currentPlayer = 2;
-    updateTurnDisplay();
-    drawGrid();
-    
-    // Check if robot has moves left
-    const robotNextMoves = points.filter(p => 
-      isAdjacent(clickedPoint, p) && !isEdgeUsed(clickedPoint, p)
-    );
-    
-    if (robotNextMoves.length === 0) {
-      endGame('Player');
-    } else {
-      robotMove();
-    }
+    fall.onfinish = () => confetti.remove();
   }
+}
 
-  // New game
-  function startNewGame() {
-    document.querySelectorAll('.confetti').forEach(el => el.remove());
-    
-    gridWidth = parseInt(gridWidthInput.value) || 5;
-    gridHeight = parseInt(gridHeightInput.value) || 5;
-    
-    gridWidth = Math.max(3, Math.min(10, gridWidth));
-    gridHeight = Math.max(3, Math.min(10, gridHeight));
-    
-    gridWidthInput.value = gridWidth;
-    gridHeightInput.value = gridHeight;
-    
-    difficulty = difficultySelect.value;
-    adjustCanvasSize();
-    points = [];
-    drawnEdges = [];
-    currentPlayer = 1;
-    gameActive = true;
-    messageBox.textContent = '';
-    newGameBtn.style.display = 'none';
-    updateTurnDisplay();
-    drawGrid();
-  }
-
-  // Event listeners
-  canvas.addEventListener('click', handleClick);
-  newGameBtn.addEventListener('click', startNewGame);
-  difficultySelect.addEventListener('change', startNewGame);
-  gridWidthInput.addEventListener('change', startNewGame);
-  gridHeightInput.addEventListener('change', startNewGame);
-
-  // Handle window resize
-  window.addEventListener('resize', function() {
-    if (gameActive) {
-      adjustCanvasSize();
-      drawGrid();
-    }
+function handleClick(e) {
+  if (gameOver || currentTurn !== 1) return;
+  const rect = canvas.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const clickY = e.clientY - rect.top;
+  
+  const clicked = points.find(p => {
+    const canvasPos = toCanvas(p);
+    return Math.abs(canvasPos.x - clickX) < 20 && Math.abs(canvasPos.y - clickY) < 20;
   });
+  
+  if (!clicked || !lastPoint || !isAdjacent(lastPoint, clicked) || edgeExists(lastPoint, clicked)) return;
+  
+  edges.push({ from: lastPoint, to: clicked, player: 1 });
+  lastPoint = clicked;
+  moveSound.play();
+  drawGrid();
+  
+  if (isVictory(clicked)) return endGame('Player');
+  const options = points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p));
+  if (options.length === 0) return endGame('Player');
+  
+  currentTurn = 2;
+  turnInfo.textContent = "Robot's Turn";
+  setTimeout(robotMove, 500);
+}
 
-  // Start game
-  startNewGame();
+function robotMove() {
+  const options = points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p));
+  if (options.length === 0) return endGame('Player');
+  
+  const move = getBestMove(lastPoint);
+  if (!move) return endGame('Player');
+  
+  edges.push({ from: lastPoint, to: move, player: 2 });
+  lastPoint = move;
+  moveSound.play();
+  drawGrid();
+  
+  if (isVictory(move)) return endGame('Robot');
+  if (points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p)).length === 0) return endGame('Robot');
+  
+  currentTurn = 1;
+  turnInfo.textContent = "Player's Turn";
+}
+
+function startGame() {
+  gridW = parseInt(document.getElementById("gridW").value);
+  gridH = parseInt(document.getElementById("gridH").value);
+  difficulty = difficultySelect.value;
+  canvas.width = 500;
+  canvas.height = 500;
+  createGrid();
+  edges = [];
+  currentTurn = 1;
+  gameOver = false;
+  lastPoint = points.find(p => p.x === 0 && p.y === gridH - 1);
+  turnInfo.textContent = "Player's Turn";
+  drawGrid();
+}
+
+canvas.addEventListener("click", handleClick);
+startGame();
 </script>
 </body>
 </html>
