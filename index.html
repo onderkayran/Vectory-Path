@@ -147,7 +147,7 @@
         <option value="hard">Hard</option>
         <option value="expert" selected>Expert</option>
       </select>
-      <button onclick="startGame()">Start</button>
+      <button id="startButton">Start</button>
       <button onclick="toggleHelp(true)">Help</button>
     </div>
 
@@ -175,15 +175,16 @@
     const helpModal = document.getElementById("helpModal");
     const moveSound = document.getElementById("moveSound");
     const winSound = document.getElementById("winSound");
+    const startButton = document.getElementById("startButton");
+    const gridWInput = document.getElementById("gridW");
+    const gridHInput = document.getElementById("gridH");
 
     let gridW = 5, gridH = 5;
     let points = [], edges = [], currentTurn = 1, gameOver = false, difficulty = 'expert', lastPoint = null;
     let blockedPoints = [];
 
-    // Sayfa yüklendiğinde otomatik başlat
-    document.addEventListener('DOMContentLoaded', function() {
-      startGame();
-    });
+    // Mobil cihaz kontrolü
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     function resizeCanvas() {
       const size = Math.min(window.innerWidth * 0.9, 500);
@@ -517,14 +518,14 @@
 
     function startGame() {
       // Grid değerlerini kontrol et ve geçersizse düzelt
-      let w = parseInt(document.getElementById("gridW").value);
-      let h = parseInt(document.getElementById("gridH").value);
+      let w = parseInt(gridWInput.value) || 5;
+      let h = parseInt(gridHInput.value) || 5;
       
-      if (w < 4 || w > 10) w = 5;
-      if (h < 4 || h > 10) h = 5;
+      w = Math.max(4, Math.min(10, w));
+      h = Math.max(4, Math.min(10, h));
       
-      document.getElementById("gridW").value = w;
-      document.getElementById("gridH").value = h;
+      gridWInput.value = w;
+      gridHInput.value = h;
       
       // Oyunu başlat
       gridW = w;
@@ -541,6 +542,25 @@
       drawGrid();
     }
 
+    // Sayfa yüklendiğinde otomatik başlat
+    document.addEventListener('DOMContentLoaded', function() {
+      if (isMobile) {
+        // Mobilde input değerlerini temizle ve varsayılan ata
+        gridWInput.value = "";
+        gridHInput.value = "";
+        setTimeout(() => {
+          gridWInput.value = "5";
+          gridHInput.value = "5";
+          startGame();
+        }, 100);
+      } else {
+        // Web'de direkt başlat
+        startGame();
+      }
+    });
+
+    // Buton event listener'ı
+    startButton.addEventListener('click', startGame);
     canvas.addEventListener("pointerdown", handleClick);
     window.addEventListener('resize', () => {
       if (!gameOver) {
