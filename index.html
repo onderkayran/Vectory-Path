@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Vector Path</title>
+  <title>Vectory Path</title>
   <style>
     body {
       font-family: sans-serif;
@@ -11,7 +11,7 @@
       background: #f8f8f8;
       padding: 20px;
       margin: 0;
-      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
     canvas {
       border: none;
@@ -19,8 +19,9 @@
       display: block;
       margin: 20px auto;
       width: 90vw;
-      height: auto;
+      height: 90vw;
       max-width: 500px;
+      max-height: 500px;
       touch-action: manipulation;
       box-shadow: 0 0 15px rgba(0,0,0,0.2);
     }
@@ -30,6 +31,8 @@
       display: inline-block;
       border-radius: 10px;
       box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 95%;
+      max-width: 600px;
     }
     .controls {
       margin: 10px 0;
@@ -41,7 +44,7 @@
     input, select, button {
       font-size: 1.1rem;
       padding: 6px 10px;
-      touch-action: manipulation;
+      min-width: 60px;
     }
     .info {
       font-weight: bold;
@@ -60,6 +63,8 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
       z-index: 10000;
       max-width: 90vw;
+      width: 400px;
+      border-radius: 10px;
     }
     .modal h2 { margin-top: 0; }
     .modal button { margin-top: 10px; }
@@ -89,11 +94,60 @@
       50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
       100% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
     }
+  
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+    button:hover {
+      background: #2980b9;
+      transform: scale(1.05);
+    }
+
+    .info.player {
+      color: #9b59b6;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+    .info.robot {
+      color: #f39c12;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 2rem !important; }
+      .info { font-size: 1.4rem !important; }
+      button, input, select { 
+        font-size: 1.2rem !important; 
+        padding: 8px 12px !important; 
+      }
+      .controls {
+        gap: 6px;
+      }
+      input, select {
+        width: 60px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="game-container">
-    <h1>Vector Path</h1>
+    <h1 style="
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, #9b59b6, #3498db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    ">
+      Vectory Path
+    </h1>
+
     <div class="controls">
       Grid:
       <input id="gridW" type="number" value="5" min="4" max="10"> x
@@ -114,16 +168,17 @@
   </div>
 
   <div class="modal" id="helpModal">
-    <h2>How to Play?</h2>
-    <p>The player and the robot take turns drawing lines.</p>
-    <p>Goal: Reach the top-right corner from the bottom-left corner.</p>
-    <p>Each line must start from the end of the previous one.</p>
-    <p>The player who cannot make a move loses.</p>
+    <h2 style="color:#2980b9;">🧠 How to Play?</h2>
+    <p><span style="color:#2ecc71; font-weight:bold;">✔ Turn Based:</span> The player and the robot take turns drawing lines.</p>
+    <p><span style="color:#e67e22; font-weight:bold;">🎯 Goal:</span> Reach the <strong style="color:#e74c3c;">top-right corner</strong> from the <strong style="color:#27ae60;">bottom-left corner</strong>.</p>
+    <p><span style="color:#3498db; font-weight:bold;">📏 Rule:</span> Each line must start from the end of the previous one.</p>
+    <p><span style="color:#9b59b6; font-weight:bold;">💥 End:</span> The player who cannot make a move loses.</p>
     <button onclick="toggleHelp(false)">Close</button>
   </div>
 
   <audio id="moveSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_b94e7c5f0f.mp3"></audio>
   <audio id="winSound" src="https://cdn.pixabay.com/audio/2022/03/14/audio_6474e3f8ba.mp3"></audio>
+  
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -136,6 +191,15 @@ const winSound = document.getElementById("winSound");
 let gridW = 5, gridH = 5;
 let points = [], edges = [], currentTurn = 1, gameOver = false, difficulty = 'expert', lastPoint = null;
 let blockedPoints = [];
+
+function resizeCanvas() {
+  const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.7, 500);
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  drawGrid();
+}
 
 function toggleHelp(show) {
   helpModal.style.display = show ? 'block' : 'none';
@@ -182,6 +246,7 @@ function drawGrid() {
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
+  // Çizgileri çiz
   for (const edge of edges) {
     const from = toCanvas(edge.from);
     const to = toCanvas(edge.to);
@@ -193,15 +258,17 @@ function drawGrid() {
     ctx.stroke();
   }
   
+  // Noktaları çiz
   ctx.font = '18px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
   for (const p of points) {
     const { x, y } = toCanvas(p);
+    const pointSize = window.innerWidth <= 600 ? 12 : 10;
     
     ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.arc(x, y, pointSize, 0, Math.PI * 2);
     ctx.fillStyle = isBlocked(p) ? '#888' :
                     (p.x === 0 && p.y === gridH - 1) ? '#2ecc71' :
                     (p.x === gridW - 1 && p.y === 0) ? '#e74c3c' :
@@ -412,36 +479,29 @@ function createConfetti() {
   }
 }
 
-function handleInteraction(e) {
+function handleClick(e) {
   if (gameOver || currentTurn !== 1) return;
   
-  // Mobil ve masaüstü için koordinatları al
-  const rect = canvas.getBoundingClientRect();
+  // Hem mouse hem de touch event'leri için koordinatları al
   let clientX, clientY;
-  
-  if (e.type === 'touchstart' || e.type === 'touchend') {
-    if (e.touches && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else if (e.changedTouches && e.changedTouches.length > 0) {
-      clientX = e.changedTouches[0].clientX;
-      clientY = e.changedTouches[0].clientY;
-    } else {
-      return;
-    }
-    // Dokunmatik olaylarda sayfa kaydırmayı engelle
+  if (e.type.includes('touch')) {
     e.preventDefault();
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
   } else {
     clientX = e.clientX;
     clientY = e.clientY;
   }
   
+  const rect = canvas.getBoundingClientRect();
   const clickX = clientX - rect.left;
   const clickY = clientY - rect.top;
   
+  // Dokunma hassasiyetini artır (mobilde daha büyük)
+  const tolerance = window.innerWidth <= 600 ? 25 : 20;
   const clicked = points.find(p => {
     const canvasPos = toCanvas(p);
-    return Math.abs(canvasPos.x - clickX) < 20 && Math.abs(canvasPos.y - clickY) < 20;
+    return Math.abs(canvasPos.x - clickX) < tolerance && Math.abs(canvasPos.y - clickY) < tolerance;
   });
   
   if (!clicked || !lastPoint || !isAdjacent(lastPoint, clicked) || edgeExists(lastPoint, clicked)) return;
@@ -457,6 +517,7 @@ function handleInteraction(e) {
   
   currentTurn = 2;
   turnInfo.textContent = "Robot's Turn";
+  turnInfo.className = "info robot";
   setTimeout(robotMove, 500);
 }
 
@@ -477,29 +538,35 @@ function robotMove() {
   
   currentTurn = 1;
   turnInfo.textContent = "Player's Turn";
+  turnInfo.className = "info player";
 }
 
 function startGame() {
   gridW = parseInt(document.getElementById("gridW").value);
   gridH = parseInt(document.getElementById("gridH").value);
   difficulty = difficultySelect.value;
-  canvas.width = 500;
-  canvas.height = 500;
   createGrid();
   edges = [];
   currentTurn = 1;
   gameOver = false;
   lastPoint = points.find(p => p.x === 0 && p.y === gridH - 1);
   turnInfo.textContent = "Player's Turn";
-  drawGrid();
+  turnInfo.className = "info player";
+  resizeCanvas();
 }
 
-// Hem dokunmatik hem de tıklama olaylarını dinle
-canvas.addEventListener("click", handleInteraction);
-canvas.addEventListener("touchstart", handleInteraction, { passive: false });
-canvas.addEventListener("touchend", handleInteraction, { passive: false });
+// Event listener'ları ekle
+canvas.addEventListener("click", handleClick);
+canvas.addEventListener("touchstart", handleClick, { passive: false });
 
-startGame();
+// Sayfa yüklendiğinde ve boyut değiştiğinde canvas'ı yeniden boyutlandır
+window.addEventListener('load', startGame);
+window.addEventListener('resize', () => {
+  if (!gameOver) {
+    resizeCanvas();
+    drawGrid();
+  }
+});
 </script>
 </body>
 </html>
