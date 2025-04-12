@@ -1,573 +1,1262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Vectory Path</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #f8f8f8;
+      background-color: #f5f6fa;
       padding: 20px;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      box-sizing: border-box;
-    }
-    canvas {
-      border: none;
-      background: white;
-      display: block;
-      margin: 20px auto;
-      width: 90vw;
-      height: 90vw;
-      max-width: 500px;
-      max-height: 500px;
-      touch-action: manipulation;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
     }
     .game-container {
-      background: white;
-      padding: 20px;
-      display: block;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      max-width: 500px;
       margin: 0 auto;
-      max-width: 100%;
-      width: fit-content;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
-    .controls {
-      margin: 10px 0;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
+    canvas {
+      border: 2px solid #e0e0e0;
+      background-color: white;
+      display: block;
+      margin: 0 auto 20px auto;
+      width: 100%;
+      max-width: 450px;
+      height: 450px;
     }
-    input, select, button {
-      font-size: 1.1rem;
-      padding: 6px 10px;
-    }
-    .info {
-      font-weight: bold;
-      margin-top: 10px;
-      font-size: 1.2rem;
-    }
-    .modal {
+    .modal-overlay {
       display: none;
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 20px;
-      border: 2px solid #444;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      z-index: 10000;
-      max-width: 90vw;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
     }
-    .modal h2 { margin-top: 0; }
-    .modal button { margin-top: 10px; }
-    .confetti {
-      position: fixed;
-      width: 10px;
-      height: 10px;
-      background-color: #f39c12;
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 9999;
+    .modal-content {
+      background-color: white;
+      padding: 25px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+      position: relative;
     }
-    .victory-text {
-      position: fixed;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 2rem;
-      color: #27ae60;
-      font-weight: bold;
-      text-shadow: 2px 2px 6px rgba(0,0,0,0.4);
-      animation: fade 2s ease;
-      z-index: 10001;
-    }
-    @keyframes fade {
-      0% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
-      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
-      100% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
-    }
-  
-    button {
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-weight: bold;
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: background 0.3s ease, transform 0.2s ease;
+      color: #777;
     }
-    button:hover {
-      background: #2980b9;
-      transform: scale(1.05);
+    .winner-modal {
+      background-color: #EA4335;
+      color: white;
+      text-align: center;
     }
-
-    .info.player {
-      color: #9b59b6;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    .loser-modal {
+      background-color: #34A853;
+      color: white;
+      text-align: center;
     }
-    .info.robot {
-      color: #f39c12;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    .obstacle-point {
+      position: absolute;
+      font-weight: bold;
+      color: #000;
+    }
+    .tutorial-canvas-container {
+      border: 2px solid #eee;
+      border-radius: 8px;
+      margin: 0 auto;
+      width: fit-content;
+    }
+    .tutorial-step {
+      transition: all 0.3s ease;
+    }
+    .tutorial-nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    .highlight-point {
+      animation: pulse 1s infinite;
+      box-shadow: 0 0 15px #FBBC05;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    #onlineStatus {
+      display: none;
+      margin-top: 10px;
+    }
+    #matchStatus {
+      display: none;
+      margin-top: 10px;
+    }
+    .player-badge {
+      font-size: 0.8rem;
+      padding: 3px 6px;
+      border-radius: 4px;
+    }
+    .player1-badge {
+      background-color: #EA4335;
+      color: white;
+    }
+    .player2-badge {
+      background-color: #5e35b1;
+      color: white;
+    }
+    #matchProgress {
+      margin-top: 10px;
+      height: 5px;
     }
   </style>
 </head>
 <body>
-  <div class="game-container">
-    <h1 style="
-      font-size: 2.5rem;
-      background: linear-gradient(90deg, #9b59b6, #3498db);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-    ">
-      Vectory Path
-    </h1>
 
-    <div class="controls">
-      Grid:
-      <input id="gridW" type="number" value="5" min="4" max="10"> x
-      <input id="gridH" type="number" value="5" min="4" max="10">
-      Difficulty:
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-        <option value="expert" selected>Expert</option>
-      </select>
-      <button id="startButton">Start</button>
-      <button onclick="toggleHelp(true)">Help</button>
+<div class="game-container">
+  <h2 class="text-center text-primary fw-bold">Vectory Path</h2>
+
+  <div class="d-flex align-items-center mb-3">
+    <label class="me-2">Grid:</label>
+    <input type="number" id="gridWidth" class="form-control me-2" value="6" min="3" max="10" style="width: 60px;">
+    <span class="me-2">x</span>
+    <input type="number" id="gridHeight" class="form-control me-2" value="5" min="3" max="10" style="width: 60px;">
+    
+    <select id="difficultySelect" class="form-select me-2" style="width: 120px;">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+      <option value="expert" selected>Expert</option>
+    </select>
+    <select id="modeSelect" class="form-select me-2" style="width: 150px;">
+      <option value="robot" selected>Robot ile Oyna</option>
+      <option value="online">Online Oyna</option>
+    </select>
+    <button id="startButton" class="btn btn-primary me-2">Start</button>
+    <button id="helpButton" class="btn btn-info text-white">Help</button>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="onlineStatus" class="alert alert-warning">
+    <strong>Online Oyun:</strong>
+    <span id="gameStatusText">Bağlanıyor...</span>
+    <span id="playerRoleBadge" class="badge ms-2"></span>
+  </div>
+
+  <div id="firstMoveHelp" class="alert alert-info mt-3" style="font-size: 14px;">
+    <strong>İlk Hamle Yardımı:</strong><br>
+    Oyuna başlamak için <span style="color:#34A853;font-weight:bold;">sol alt köşeye (yeşil nokta)</span> komşu olan noktalardan birine tıklayın.
+  </div>
+
+  <div id="onlinePanel" class="mt-4 p-3 border rounded bg-light" style="display: none;">
+    <h5 class="text-center mb-3 fw-bold">Online Oyun</h5>
+    <button id="findMatchBtn" class="btn btn-primary w-100 mb-2">Eşleşme Bul</button>
+    <div id="matchStatus" class="alert alert-info mt-3">
+      <span id="matchStatusText">Eşleşme aranıyor...</span>
+      <div id="matchProgress" class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+      </div>
     </div>
-
-    <canvas id="gameCanvas" width="500" height="500"></canvas>
-    <div class="info" id="turnInfo">Player's Turn</div>
   </div>
+</div>
 
-  <div class="modal" id="helpModal">
-    <h2 style="color:#2980b9;">🧠 How to Play?</h2>
-    <p><span style="color:#2ecc71; font-weight:bold;">✔ Turn Based:</span> The player and the robot take turns drawing lines.</p>
-    <p><span style="color:#e67e22; font-weight:bold;">🎯 Goal:</span> Reach the <strong style="color:#e74c3c;">top-right corner</strong> from the <strong style="color:#27ae60;">bottom-left corner</strong>.</p>
-    <p><span style="color:#3498db; font-weight:bold;">📏 Rule:</span> Each line must start from the end of the previous one.</p>
-    <p><span style="color:#9b59b6; font-weight:bold;">💥 End:</span> The player who cannot make a move loses.</p>
-    <button onclick="toggleHelp(false)">Close</button>
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeModal">×</span>
+    <h4 class="text-primary">Nasıl Oynanır?</h4>
+    <p>Oyunun amacı başlangıç noktasından bitiş noktasına ulaşmaktır.</p>
+    <ul>
+      <li>Noktalar arasında çizgi çizerek ilerlenir.</li>
+      <li>Yalnızca komşu noktalara hamle yapılabilir (çapraz dahil).</li>
+      <li>X ile işaretli noktalar engeldir, kullanılamaz.</li>
+      <li>🔒 ile işaretli noktalar kilitlidir, kullanılamaz (5x5 ve üzeri gridlerde).</li>
+      <li>Rakibini hamlesiz bırakan taraf kazanır.</li>
+    </ul>
+    <h5 class="mt-3">Online Mod:</h5>
+    <p>Rastgele eşleşme ile gerçek oyuncularla oynayabilirsiniz.</p>
   </div>
+</div>
 
-  <audio id="moveSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_b94e7c5f0f.mp3"></audio>
-  <audio id="winSound" src="https://cdn.pixabay.com/audio/2022/03/14/audio_6474e3f8ba.mp3"></audio>
-  
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const turnInfo = document.getElementById("turnInfo");
-    const difficultySelect = document.getElementById("difficulty");
-    const helpModal = document.getElementById("helpModal");
-    const moveSound = document.getElementById("moveSound");
-    const winSound = document.getElementById("winSound");
-    const startButton = document.getElementById("startButton");
-    const gridWInput = document.getElementById("gridW");
-    const gridHInput = document.getElementById("gridH");
+<!-- Tutorial Modal -->
+<div class="modal-overlay" id="tutorialModal" style="display:flex;">
+  <div class="modal-content" style="max-width:600px;">
+    <span class="close-modal" id="closeTutorial">×</span>
+    <h4 class="text-primary mb-4">Vectory Path Öğretici</h4>
+    
+    <div class="tutorial-step active" data-step="1">
+      <h5>1. Başlangıç ve Bitiş Noktaları</h5>
+      <div class="tutorial-canvas-container mb-3">
+        <canvas id="tutorialCanvas1" width="400" height="300"></canvas>
+      </div>
+      <p>Yeşil nokta (sol alt) başlangıç, kırmızı nokta (sağ üst) bitiş noktasıdır.</p>
+    </div>
+    
+    <div class="tutorial-step" data-step="2" style="display:none;">
+      <h5>2. İlk Hamleniz</h5>
+      <div class="tutorial-canvas-container mb-3">
+        <canvas id="tutorialCanvas2" width="400" height="300"></canvas>
+      </div>
+      <p>Başlangıç noktasının komşularına tıklayarak ilk hamlenizi yapın.</p>
+    </div>
+    
+    <div class="tutorial-step" data-step="3" style="display:none;">
+      <h5>3. Yol Oluşturma</h5>
+      <div class="tutorial-canvas-container mb-3">
+        <canvas id="tutorialCanvas3" width="400" height="300"></canvas>
+      </div>
+      <p>Komşu noktalar arasında çizgiler çizerek bitişe ulaşmaya çalışın.</p>
+    </div>
+    
+    <div class="d-flex justify-content-between mt-4">
+      <button id="prevStep" class="btn btn-secondary" disabled>Önceki</button>
+      <button id="nextStep" class="btn btn-primary">Sonraki</button>
+    </div>
+    <button id="skipTutorial" class="btn btn-outline-secondary mt-2 w-100">Öğreticiyi Atla</button>
+  </div>
+</div>
 
-    let gridW = 5, gridH = 5;
-    let points = [], edges = [], currentTurn = 1, gameOver = false, difficulty = 'expert', lastPoint = null;
-    let blockedPoints = [];
+<!-- Winner Modal -->
+<div class="modal-overlay" id="winnerModal" style="display:none;">
+  <div class="modal-content winner-modal">
+    <h2 id="winnerText">Tebrikler Kazandınız!</h2>
+    <button id="playAgainBtn" class="btn btn-light mt-3">Tekrar Oyna</button>
+  </div>
+</div>
 
-    // Mobil cihaz kontrolü
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+<!-- Loser Modal -->
+<div class="modal-overlay" id="loserModal" style="display:none;">
+  <div class="modal-content loser-modal">
+    <h2 id="loserText">Maalesef Kaybettiniz!</h2>
+    <button id="tryAgainBtn" class="btn btn-light mt-3">Yeni Oyun</button>
+  </div>
+</div>
 
-    function resizeCanvas() {
-      const size = Math.min(window.innerWidth * 0.9, 500);
-      canvas.width = size;
-      canvas.height = size;
-      drawGrid();
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+  // Firebase konfigürasyonu
+  const firebaseConfig = {
+    apiKey: "AIzaSyB4lQ2KZanAK3fzRmwXhedh4rtfb6PZ9FY",
+    authDomain: "vectory-path.firebaseapp.com",
+    databaseURL: "https://vectory-path-default-rtdb.firebaseio.com",
+    projectId: "vectory-path",
+    storageBucket: "vectory-path.firebasestorage.app",
+    messagingSenderId: "462766360594",
+    appId: "1:462766360594:web:9a9443f056d45155c8b0cb",
+    measurementId: "G-KCKK8ZRHTT"
+  };
+
+  // Firebase başlatma
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // Oyun durumu
+  let gridW = 6, gridH = 5;
+  let edges = [];
+  let currentPlayer = 1;
+  let lastPoint = null;
+  let gameActive = true;
+  let obstacles = [];
+  let currentGameRef = null;
+  let isOnlineGame = false;
+  let playerRole = null;
+  let myPlayerId = Math.random().toString(36).substr(2, 9); // Rastgele oyuncu ID
+  let matchmakingRef = null;
+  let matchTimeout = null;
+
+  // Canvas ve UI elementleri
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const startButton = document.getElementById('startButton');
+  const helpButton = document.getElementById('helpButton');
+  const helpModal = document.getElementById('helpModal');
+  const closeModal = document.getElementById('closeModal');
+  const winnerModal = document.getElementById('winnerModal');
+  const winnerText = document.getElementById('winnerText');
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  const loserModal = document.getElementById('loserModal');
+  const loserText = document.getElementById('loserText');
+  const tryAgainBtn = document.getElementById('tryAgainBtn');
+  const difficultySelect = document.getElementById('difficultySelect');
+  const modeSelect = document.getElementById('modeSelect');
+  const findMatchBtn = document.getElementById('findMatchBtn');
+  const matchStatus = document.getElementById('matchStatus');
+  const matchStatusText = document.getElementById('matchStatusText');
+  const matchProgress = document.getElementById('matchProgress');
+
+  // Canvas boyutlandırma
+  function resizeCanvas() {
+    const container = document.querySelector('.game-container');
+    const size = Math.min(container.clientWidth * 0.9, 500);
+    canvas.width = size;
+    canvas.height = size;
+    drawGrid();
+  }
+
+  // Grid koordinatlarını canvas koordinatlarına çevir
+  function toCanvasCoords(p) {
+    const padding = canvas.width * 0.1;
+    const usableW = canvas.width - 2 * padding;
+    const usableH = canvas.height - 2 * padding;
+    return {
+      x: Math.round(padding + (p.x * usableW) / (gridW - 1)),
+      y: Math.round(padding + (p.y * usableH) / (gridH - 1))
+    };
+  }
+
+  // Engel oluştur
+  function generateObstacles() {
+    obstacles = [];
+    const difficulty = difficultySelect.value;
+    let obstacleCount;
+    
+    switch(difficulty) {
+      case 'easy': obstacleCount = Math.floor(gridW * gridH * 0.05); break;
+      case 'medium': obstacleCount = Math.floor(gridW * gridH * 0.1); break;
+      case 'hard': obstacleCount = Math.floor(gridW * gridH * 0.15); break;
+      case 'expert': obstacleCount = 0; break;
     }
-
-    function toggleHelp(show) {
-      helpModal.style.display = show ? 'block' : 'none';
+    
+    // Kilitli noktaları ekle (5x5 ve üzeri gridlerde)
+    if (gridW >= 5 && gridH >= 5) {
+      addLockedPoints(4);
     }
-
-    function createGrid() {
-      points = [];
-      blockedPoints = [];
-      for (let y = 0; y < gridH; y++) {
-        for (let x = 0; x < gridW; x++) {
-          points.push({ x, y });
+    
+    const protectedPoints = [
+      {x: 0, y: gridH - 1}, {x: gridW - 1, y: 0},
+      {x: 0, y: gridH - 2}, {x: 1, y: gridH - 1},
+      {x: 1, y: gridH - 2}, {x: gridW - 1, y: 1},
+      {x: gridW - 2, y: 0}, {x: gridW - 2, y: 1}
+    ];
+    
+    let attempts = 0;
+    while (obstacles.length < obstacleCount && attempts < 100) {
+      attempts++;
+      const x = Math.floor(Math.random() * gridW);
+      const y = Math.floor(Math.random() * gridH);
+      
+      const isProtected = protectedPoints.some(p => p.x === x && p.y === y);
+      const exists = obstacles.some(obs => obs.x === x && obs.y === y);
+      
+      if (!isProtected && !exists) {
+        // Engel eklemeden önce yolun mümkün olduğunu kontrol et
+        const tempObstacles = [...obstacles, {x, y}];
+        const start = {x: 0, y: gridH - 1};
+        const end = {x: gridW - 1, y: 0};
+        if (isPathPossible(start, end, tempObstacles)) {
+          obstacles.push({x, y});
         }
       }
-      if (gridW >= 5 && gridH >= 5 && (gridW > 5 || gridH > 5)) {
-        const start = { x: 0, y: gridH - 1 };
-        const end = { x: gridW - 1, y: 0 };
-        while (blockedPoints.length < 3) {
-          const rx = Math.floor(Math.random() * gridW);
-          const ry = Math.floor(Math.random() * gridH);
-          const isStartOrEnd = (rx === start.x && ry === start.y) || (rx === end.x && ry === end.y);
-          const alreadyBlocked = blockedPoints.some(p => p.x === rx && p.y === ry);
-          if (!isStartOrEnd && !alreadyBlocked) blockedPoints.push({ x: rx, y: ry });
-        }
+    }
+    
+    // Online oyunda engelleri paylaş
+    if (isOnlineGame && playerRole === 'player1' && currentGameRef) {
+      currentGameRef.update({ 
+        obstacles: obstacles,
+        status: 'playing'
+      });
+    }
+  }
+
+  // Kilitli noktalar ekle
+  function addLockedPoints(count) {
+    const lockedPoints = [];
+    const protectedPoints = [
+      {x: 0, y: gridH - 1}, {x: gridW - 1, y: 0},
+      {x: 0, y: gridH - 2}, {x: 1, y: gridH - 1},
+      {x: 1, y: gridH - 2}, {x: gridW - 1, y: 1},
+      {x: gridW - 2, y: 0}, {x: gridW - 2, y: 1}
+    ];
+    
+    while (lockedPoints.length < count) {
+      const x = Math.floor(Math.random() * gridW);
+      const y = Math.floor(Math.random() * gridH);
+      
+      const isProtected = protectedPoints.some(p => p.x === x && p.y === y);
+      const exists = lockedPoints.some(p => p.x === x && p.y === y);
+      
+      if (!isProtected && !exists) {
+        lockedPoints.push({x, y, locked: true});
       }
     }
+    
+    obstacles.push(...lockedPoints);
+  }
 
-    function isBlocked(p) {
-      return blockedPoints.some(b => b.x === p.x && b.y === p.y);
-    }
-
-    function toCanvas(p) {
-      const paddingX = canvas.width * 0.1;
-      const paddingY = canvas.height * 0.1;
-      const availableWidth = canvas.width - paddingX * 2;
-      const availableHeight = canvas.height - paddingY * 2;
+  function isPathPossible(start, end, obstacles) {
+    const visited = new Set();
+    const queue = [start];
+    const key = p => `${p.x},${p.y}`;
+    
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (current.x === end.x && current.y === end.y) return true;
       
-      return {
-        x: paddingX + (p.x * (availableWidth / (gridW - 1))),
-        y: paddingY + (p.y * (availableHeight / (gridH - 1)))
-      };
-    }
-
-    function drawGrid() {
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      for (const edge of edges) {
-        const from = toCanvas(edge.from);
-        const to = toCanvas(edge.to);
-        ctx.beginPath();
-        ctx.moveTo(from.x, from.y);
-        ctx.lineTo(to.x, to.y);
-        ctx.strokeStyle = edge.player === 1 ? '#9b59b6' : '#f39c12';
-        ctx.lineWidth = 6;
-        ctx.stroke();
-      }
-      
-      ctx.font = '18px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      for (const p of points) {
-        const { x, y } = toCanvas(p);
-        
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fillStyle = isBlocked(p) ? '#888' :
-                        (p.x === 0 && p.y === gridH - 1) ? '#2ecc71' :
-                        (p.x === gridW - 1 && p.y === 0) ? '#e74c3c' :
-                        (p === lastPoint) ? '#f1c40f' : '#3498db';
-        ctx.fill();
-        
-        ctx.fillStyle = '#fff';
-        if (p.x === 0 && p.y === gridH - 1) {
-          ctx.fillText('S', x, y);
-        } else if (p.x === gridW - 1 && p.y === 0) {
-          ctx.fillText('E', x, y);
-        } else if (isBlocked(p)) {
-          ctx.fillText('X', x, y);
-        }
-      }
-    }
-
-    function isAdjacent(p1, p2) {
-      if (isBlocked(p2)) return false;
-      const dx = Math.abs(p1.x - p2.x);
-      const dy = Math.abs(p1.y - p2.y);
-      return (dx <= 1 && dy <= 1 && (dx + dy > 0));
-    }
-
-    function edgeExists(p1, p2) {
-      return edges.some(e => (e.from === p1 && e.to === p2) || (e.from === p2 && e.to === p1));
-    }
-
-    function isVictory(p) {
-      return p.x === gridW - 1 && p.y === 0;
-    }
-
-    function getMediumMove(from) {
-      const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
-      const goal = { x: gridW - 1, y: 0 };
-      
-      const playerDistancePenalty = {};
-      for (const move of options) {
-        edges.push({ from, to: move, player: 2 });
-        const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
-        
-        let minPlayerDistance = Infinity;
-        for (const playerMove of playerOptions) {
-          const dist = Math.hypot(goal.x - playerMove.x, goal.y - playerMove.y);
-          if (dist < minPlayerDistance) minPlayerDistance = dist;
-        }
-        playerDistancePenalty[move.x + "," + move.y] = minPlayerDistance;
-        edges.pop();
-      }
-
-      return options.reduce((best, current) => 
-        playerDistancePenalty[current.x + "," + current.y] > 
-        playerDistancePenalty[best.x + "," + best.y] ? current : best
-      );
-    }
-
-    function getHardMove(from) {
-      const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
-      const goal = { x: gridW - 1, y: 0 };
-      
-      const playerDistanceScores = {};
-      for (const move of options) {
-        edges.push({ from, to: move, player: 2 });
-        const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
-        
-        let minPlayerDistance = Infinity;
-        for (const playerMove of playerOptions) {
-          const dist = Math.hypot(goal.x - playerMove.x, goal.y - playerMove.y);
-          if (dist < minPlayerDistance) minPlayerDistance = dist;
-        }
-        playerDistanceScores[move.x + "," + move.y] = minPlayerDistance;
-        edges.pop();
-      }
-
-      const restrictionScores = {};
-      for (const move of options) {
-        edges.push({ from, to: move, player: 2 });
-        const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
-        restrictionScores[move.x + "," + move.y] = -playerOptions.length * 5;
-        edges.pop();
-      }
-
-      for (const move of options) {
-        if (isVictory(move)) return move;
-      }
-
-      let bestMove = null;
-      let bestScore = -Infinity;
-      for (const move of options) {
-        const score = 
-          playerDistanceScores[move.x + "," + move.y] * 3 +
-          restrictionScores[move.x + "," + move.y] +
-          (Math.random() * 2);
-        
-        if (score > bestScore) {
-          bestScore = score;
-          bestMove = move;
-        }
-      }
-
-      return bestMove || options[0];
-    }
-
-    function getExpertMove(from) {
-      const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
-      
-      for (const move of options) {
-        if (isVictory(move)) return move;
-      }
-      
-      let bestMove = null;
-      let bestScore = -Infinity;
-      
-      for (const move of options) {
-        edges.push({ from, to: move, player: 2 });
-        
-        const playerOptions = points.filter(p => isAdjacent(move, p) && !edgeExists(move, p));
-        let playerCanWin = false;
-        let playerMoveCount = 0;
-        
-        for (const playerMove of playerOptions) {
-          playerMoveCount++;
-          if (isVictory(playerMove)) {
-            playerCanWin = true;
-            break;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = current.x + dx;
+          const ny = current.y + dy;
+          if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+            const next = {x: nx, y: ny};
+            if (!obstacles.some(o => o.x === nx && o.y === ny) && !visited.has(key(next))) {
+              visited.add(key(next));
+              queue.push(next);
+            }
           }
         }
+      }
+    }
+    return false;
+  }
+
+  // Grid çiz
+  function drawGrid() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const padding = canvas.width * 0.1;
+    const usableW = canvas.width - 2 * padding;
+    const usableH = canvas.height - 2 * padding;
+
+    // Çizgileri çiz
+    ctx.lineWidth = 4;
+    for (let edge of edges) {
+      const from = toCanvasCoords(edge.from);
+      const to = toCanvasCoords(edge.to);
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.strokeStyle = edge.player === 1 ? "#EA4335" : "#5e35b1";
+      ctx.stroke();
+    }
+
+    // Noktaları çiz
+    for (let y = 0; y < gridH; y++) {
+      for (let x = 0; x < gridW; x++) {
+        const point = {x, y};
+        const isObstacle = obstacles.some(obs => obs.x === x && obs.y === y && !obs.locked);
+        const isLocked = obstacles.some(obs => obs.x === x && obs.y === y && obs.locked);
+        const {x: px, y: py} = toCanvasCoords(point);
         
-        let score = 0;
-        if (playerCanWin) {
-          score = -1000;
-        } else if (playerMoveCount === 0) {
-          score = 1000;
+        if (isLocked) {
+          // Kilitli noktaları özel işaretle
+          ctx.beginPath();
+          ctx.arc(px, py, 8, 0, Math.PI * 2);
+          ctx.fillStyle = "#FF5733";
+          ctx.fill();
+          ctx.font = 'bold 12px Arial';
+          ctx.fillStyle = "#000";
+          ctx.fillText('🔒', px - 6, py + 5);
+          continue;
+        }
+        
+        if (isObstacle) {
+          ctx.font = 'bold 16px Arial';
+          ctx.fillStyle = '#000';
+          ctx.fillText('X', px - 5, py + 5);
+          continue;
+        }
+        
+        ctx.beginPath();
+        ctx.arc(px, py, 8, 0, Math.PI * 2);
+        
+        if (x === 0 && y === gridH - 1) {
+          ctx.fillStyle = "#34A853";
+        } else if (x === gridW - 1 && y === 0) {
+          ctx.fillStyle = "#EA4335";
+        } else if (lastPoint && x === lastPoint.x && y === lastPoint.y) {
+          ctx.fillStyle = "#FBBC05";
         } else {
-          const goal = { x: gridW - 1, y: 0 };
-          score = -Math.hypot(goal.x - move.x, goal.y - move.y);
-          score -= playerMoveCount * 10;
+          ctx.fillStyle = "#4285F4";
         }
-        
-        edges.pop();
-        
-        if (score > bestScore) {
-          bestScore = score;
-          bestMove = move;
+        ctx.fill();
+      }
+    }
+  }
+
+  // İki nokta komşu mu kontrolü
+  function isAdjacent(p1, p2) {
+    const dx = Math.abs(p1.x - p2.x);
+    const dy = Math.abs(p1.y - p2.y);
+    return (dx <= 1 && dy <= 1) && !(dx === 0 && dy === 0);
+  }
+
+  // Çizgi var mı kontrolü
+  function edgeExists(p1, p2) {
+    return edges.some(e =>
+      (e.from.x === p1.x && e.from.y === p1.y && e.to.x === p2.x && e.to.y === p2.y) ||
+      (e.to.x === p1.x && e.to.y === p1.y && e.from.x === p2.x && e.from.y === p2.y)
+    );
+  }
+
+  // Engel kontrolü
+  function isObstacle(p) {
+    return obstacles.some(obs => obs.x === p.x && obs.y === p.y);
+  }
+
+  // Kilitli nokta kontrolü
+  function isLocked(p) {
+    return obstacles.some(obs => obs.x === p.x && obs.y === p.y && obs.locked);
+  }
+
+  // Bitiş noktası kontrolü
+  function isEndPoint(p) {
+    return p.x === gridW - 1 && p.y === 0;
+  }
+
+  // Hamle yapabilme durumunu kontrol et
+  function canMove(from) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = from.x + dx;
+        const ny = from.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+          const next = { x: nx, y: ny };
+          if (!edgeExists(from, next) && !isObstacle(next)) {
+            return true;
+          }
         }
       }
-      
-      return bestMove || options[0];
     }
+    return false;
+  }
 
-    function getBestMove(from) {
-      const settings = {
-        easy: { mistakeRate: 0.5 },
-        medium: { mistakeRate: 0.3 },
-        hard: { mistakeRate: 0.04 },
-        expert: { mistakeRate: 0.05 }
-      }[difficulty];
-      
-      if (Math.random() < settings.mistakeRate) {
-        const options = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
-        return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
-      }
-      
-      switch(difficulty) {
-        case 'expert': return getExpertMove(from);
-        case 'hard': return getHardMove(from);
-        case 'medium': return getMediumMove(from);
-        default: 
-          const randomOptions = points.filter(p => isAdjacent(from, p) && !edgeExists(from, p));
-          return randomOptions.length > 0 ? randomOptions[Math.floor(Math.random() * randomOptions.length)] : null;
-      }
-    }
+  // Hamle yap
+  function makeMove(point) {
+    if (!gameActive || isLocked(point)) return;
 
-    function endGame(winner) {
-      gameOver = true;
-      turnInfo.textContent = winner + ' wins!';
-      drawGrid();
-      winSound.play();
-      createConfetti();
-      showVictoryText(winner);
-    }
+    const move = {
+      from: lastPoint || { x: 0, y: gridH - 1 },
+      to: point,
+      player: currentPlayer
+    };
 
-    function showVictoryText(winner) {
-      const msg = document.createElement('div');
-      msg.className = 'victory-text';
-      msg.textContent = winner.toUpperCase() + ' WINS!';
-      document.body.appendChild(msg);
-      setTimeout(() => msg.remove(), 3000);
-    }
-
-    function createConfetti() {
-      const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f39c12'];
-      for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.top = '-10px';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        document.body.appendChild(confetti);
-        const fall = confetti.animate([
-          { transform: 'translateY(0)', opacity: 1 },
-          { transform: 'translateY(100vh)', opacity: 0 }
-        ], {
-          duration: Math.random() * 2000 + 2000,
-          easing: 'ease-in-out'
-        });
-        fall.onfinish = () => confetti.remove();
-      }
-    }
-
-    function handleClick(e) {
-      if (gameOver || currentTurn !== 1) return;
-      const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-      
-      const clicked = points.find(p => {
-        const canvasPos = toCanvas(p);
-        return Math.abs(canvasPos.x - clickX) < 20 && Math.abs(canvasPos.y - clickY) < 20;
-      });
-      
-      if (!clicked || !lastPoint || !isAdjacent(lastPoint, clicked) || edgeExists(lastPoint, clicked)) return;
-      
-      edges.push({ from: lastPoint, to: clicked, player: 1 });
-      lastPoint = clicked;
-      moveSound.play();
-      drawGrid();
-      
-      if (isVictory(clicked)) return endGame('Player');
-      const options = points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p));
-      if (options.length === 0) return endGame('Player');
-      
-      currentTurn = 2;
-      turnInfo.textContent = "Robot's Turn";
-      turnInfo.className = "info robot";
+    if (isOnlineGame) {
+      sendOnlineMove(move);
+    } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
       setTimeout(robotMove, 500);
     }
+    
+    processMoveLocally(move);
+  }
 
-    function robotMove() {
-      const options = points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p));
-      if (options.length === 0) return endGame('Player');
-      
-      const move = getBestMove(lastPoint);
-      if (!move) return endGame('Player');
-      
-      edges.push({ from: lastPoint, to: move, player: 2 });
-      lastPoint = move;
-      moveSound.play();
-      drawGrid();
-      
-      if (isVictory(move)) return endGame('Robot');
-      if (points.filter(p => isAdjacent(lastPoint, p) && !edgeExists(lastPoint, p)).length === 0) return endGame('Robot');
-      
-      currentTurn = 1;
-      turnInfo.textContent = "Player's Turn";
-      turnInfo.className = "info player";
+  function processMoveLocally(move) {
+    edges.push({
+      from: move.from,
+      to: move.to,
+      player: move.player
+    });
+    
+    lastPoint = move.to;
+    currentPlayer = move.player === 1 ? 2 : 1;
+    drawGrid();
+    
+    if (isEndPoint(move.to)) {
+      endGame(move.player);
+    } else if (!canMove(move.to)) {
+      endGame(move.player === 1 ? 2 : 1);
     }
+  }
 
-    function startGame() {
-      // Grid değerlerini kontrol et ve geçersizse düzelt
-      let w = parseInt(gridWInput.value) || 5;
-      let h = parseInt(gridHInput.value) || 5;
-      
-      w = Math.max(4, Math.min(10, w));
-      h = Math.max(4, Math.min(10, h));
-      
-      gridWInput.value = w;
-      gridHInput.value = h;
-      
-      // Oyunu başlat
-      gridW = w;
-      gridH = h;
-      difficulty = difficultySelect.value;
-      resizeCanvas();
-      createGrid();
-      edges = [];
-      currentTurn = 1;
-      gameOver = false;
-      lastPoint = points.find(p => p.x === 0 && p.y === gridH - 1);
-      turnInfo.textContent = "Player's Turn";
-      turnInfo.className = "info player";
-      drawGrid();
-    }
-
-    // Sayfa yüklendiğinde otomatik başlat
-    document.addEventListener('DOMContentLoaded', function() {
-      if (isMobile) {
-        // Mobilde input değerlerini temizle ve varsayılan ata
-        gridWInput.value = "";
-        gridHInput.value = "";
-        setTimeout(() => {
-          gridWInput.value = "5";
-          gridHInput.value = "5";
-          startGame();
-        }, 100);
+  function endGame(winner) {
+    gameActive = false;
+    
+    if (isOnlineGame) {
+      endOnlineGame(winner);
+    } else {
+      if (winner === 1) {
+        winnerText.textContent = "Maalesef Kaybettiniz!";
+        winnerModal.style.display = 'flex';
       } else {
-        // Web'de direkt başlat
-        startGame();
+        loserText.textContent = modeSelect.value === 'robot' 
+          ? "Tebrikler Kazandınız!" 
+          : "Maalesef Kaybettiniz!";
+        loserModal.style.display = 'flex';
+      }
+    }
+  }
+
+  // Robot hamlesi
+  function robotMove() {
+    if (!gameActive || modeSelect.value !== "robot") return;
+    
+    const endPoint = { x: gridW - 1, y: 0 };
+    const difficulty = difficultySelect.value;
+    
+    // 1. Öncelik: Oyuncuyu hamlesiz bırakarak kazanma
+    const blockingMoves = findBlockingMoves();
+    if (blockingMoves.length > 0 && (difficulty === 'hard' || difficulty === 'expert')) {
+      makeMove(blockingMoves[0]);
+      return;
+    }
+    
+    // 2. Öncelik: Bitiş noktasına ulaşma fırsatı varsa ulaş
+    if (isAdjacent(lastPoint, endPoint) && !edgeExists(lastPoint, endPoint)) {
+      makeMove(endPoint);
+      return;
+    }
+    
+    // 3. Zorluk seviyesine göre strateji
+    if (difficulty === 'easy') {
+      // Rastgele hamle
+      const moves = [];
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = lastPoint.x + dx;
+          const ny = lastPoint.y + dy;
+          if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+            const next = { x: nx, y: ny };
+            if (!edgeExists(lastPoint, next) && !isObstacle(next)) {
+              moves.push(next);
+            }
+          }
+        }
+      }
+      if (moves.length > 0) {
+        const randomMove = moves[Math.floor(Math.random() * moves.length)];
+        makeMove(randomMove);
+        return;
+      }
+    } else if (difficulty === 'medium') {
+      // %50 rastgele, %50 stratejik hamle
+      if (Math.random() > 0.5) {
+        const moves = [];
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = lastPoint.x + dx;
+            const ny = lastPoint.y + dy;
+            if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+              const next = { x: nx, y: ny };
+              if (!edgeExists(lastPoint, next) && !isObstacle(next)) {
+                moves.push(next);
+              }
+            }
+          }
+        }
+        if (moves.length > 0) {
+          const randomMove = moves[Math.floor(Math.random() * moves.length)];
+          makeMove(randomMove);
+          return;
+        }
+      }
+    }
+    
+    // 4. Stratejik hamleler
+    const moves = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = lastPoint.x + dx;
+        const ny = lastPoint.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+          const next = { x: nx, y: ny };
+          if (!edgeExists(lastPoint, next) && !isObstacle(next)) {
+            let priority = 0;
+            const distToEnd = Math.abs(nx - endPoint.x) + Math.abs(ny - endPoint.y);
+            priority -= distToEnd * 2;
+            
+            if (difficulty === 'hard' || difficulty === 'expert') {
+              const path = findPath(next, endPoint);
+              if (path) priority -= path.length * 2;
+            }
+            
+            moves.push({ point: next, priority });
+          }
+        }
+      }
+    }
+    
+    if (moves.length > 0) {
+      moves.sort((a, b) => b.priority - a.priority);
+      makeMove(moves[0].point);
+    } else {
+      endGame(1); // Oyuncu kazanır
+    }
+  }
+
+  function findBlockingMoves() {
+    const blockingMoves = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = lastPoint.x + dx;
+        const ny = lastPoint.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+          const next = { x: nx, y: ny };
+          if (!edgeExists(lastPoint, next) && !isObstacle(next)) {
+            const tempEdges = [...edges, {from: lastPoint, to: next, player: 2}];
+            if (!canMove(next)) {
+              blockingMoves.push(next);
+            }
+          }
+        }
+      }
+    }
+    return blockingMoves;
+  }
+
+  function findPath(from, to) {
+    const visited = new Set();
+    const queue = [{ point: from, path: [] }];
+    const key = p => `${p.x},${p.y}`;
+    
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (visited.has(key(current.point))) continue;
+      visited.add(key(current.point));
+      
+      if (current.point.x === to.x && current.point.y === to.y) {
+        return current.path;
+      }
+      
+      // Önce düz (yatay/dikey) komşuları ekle
+      const directions = [
+        {dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1},
+        {dx: 1, dy: 1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}, {dx: -1, dy: -1}
+      ];
+      
+      for (const dir of directions) {
+        const nx = current.point.x + dir.dx;
+        const ny = current.point.y + dir.dy;
+        
+        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH && !isObstacle({x: nx, y: ny})) {
+          const nextPoint = { x: nx, y: ny };
+          const edgeExists = edges.some(e =>
+            (e.from.x === current.point.x && e.from.y === current.point.y && 
+             e.to.x === nextPoint.x && e.to.y === nextPoint.y) ||
+            (e.to.x === current.point.x && e.to.y === current.point.y && 
+             e.from.x === nextPoint.x && e.from.y === nextPoint.y)
+          );
+          
+          if (!edgeExists) {
+            const newPath = [...current.path, nextPoint];
+            queue.push({ point: nextPoint, path: newPath });
+          }
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  // Tıklama işleyici
+  canvas.addEventListener("click", function(e) {
+    if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    
+    let minDist = Infinity;
+    let closestPoint = null;
+    
+    for (let y = 0; y < gridH; y++) {
+      for (let x = 0; x < gridW; x++) {
+        if (isObstacle({x, y})) continue;
+        
+        const canvasCoords = toCanvasCoords({x, y});
+        const dist = Math.sqrt(Math.pow(mx - canvasCoords.x, 2) + Math.pow(my - canvasCoords.y, 2));
+        
+        if (dist < minDist && dist < 20) {
+          minDist = dist;
+          closestPoint = {x, y};
+        }
+      }
+    }
+    
+    if (!closestPoint) return;
+    const clicked = closestPoint;
+    
+    const startPoint = { x: 0, y: gridH - 1 };
+
+    if (isEndPoint(clicked)) {
+      if (lastPoint && isAdjacent(lastPoint, clicked) && !isObstacle(clicked)) {
+        makeMove(clicked);
+      }
+      return;
+    }
+
+    if (!lastPoint) {
+      if (isAdjacent(startPoint, clicked) && !edgeExists(startPoint, clicked) && !isObstacle(clicked)) {
+        makeMove(clicked);
+      }
+      return;
+    }
+
+    if (isAdjacent(lastPoint, clicked) && !edgeExists(lastPoint, clicked) && !isObstacle(clicked)) {
+      makeMove(clicked);
+    }
+  });
+
+  // Online oyun fonksiyonları
+  function findOnlineMatch() {
+    matchStatus.style.display = 'block';
+    matchStatusText.textContent = "Eşleşme aranıyor...";
+    findMatchBtn.disabled = true;
+    
+    // Eşleşme kuyruğuna ekle
+    matchmakingRef = database.ref('matchmaking').push({
+      playerId: myPlayerId,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+      config: {
+        gridWidth: parseInt(document.getElementById('gridWidth').value),
+        gridHeight: parseInt(document.getElementById('gridHeight').value),
+        difficulty: document.getElementById('difficultySelect').value
+      },
+      status: 'waiting'
+    });
+
+    // Eşleşme durumunu dinle
+    matchmakingRef.on('value', (snapshot) => {
+      const matchData = snapshot.val();
+      if (!matchData) return;
+      
+      if (matchData.status === 'matched' && matchData.gameId) {
+        // Eşleşme bulundu
+        joinOnlineGame(matchData.gameId, matchData.playerRole);
+      } else if (matchData.status === 'timeout') {
+        // Zaman aşımı
+        matchStatusText.textContent = "Eşleşme bulunamadı. Tekrar deneyin.";
+        findMatchBtn.disabled = false;
+        matchmakingRef.remove();
+        clearTimeout(matchTimeout);
       }
     });
 
-    // Buton event listener'ı
-    startButton.addEventListener('click', startGame);
-    canvas.addEventListener("pointerdown", handleClick);
-    window.addEventListener('resize', () => {
-      if (!gameOver) {
-        resizeCanvas();
-        drawGrid();
+    // Eşleşme bulmaya çalış (30 saniye içinde)
+    matchTimeout = setTimeout(() => {
+      matchmakingRef.transaction((currentData) => {
+        if (currentData && currentData.status === 'waiting') {
+          currentData.status = 'timeout';
+        }
+        return currentData;
+      });
+    }, 30000);
+
+    // Uygun eşleşme ara
+    database.ref('matchmaking').orderByChild('status').equalTo('waiting').once('value', (snapshot) => {
+      snapshot.forEach((childSnapshot) => {
+        const otherPlayer = childSnapshot.val();
+        
+        if (otherPlayer.playerId !== myPlayerId && otherPlayer.status === 'waiting') {
+          // Eşleşme bulundu, oyun oluştur
+          const gameId = generateGameId();
+          const gameRef = database.ref(`games/${gameId}`);
+          
+          // Oyunu başlat (ilk oyuncunun ayarlarını kullan)
+          gameRef.set({
+            player1: otherPlayer.playerId,
+            player2: myPlayerId,
+            status: 'waiting',
+            config: otherPlayer.config, // İlk oyuncunun ayarları
+            currentPlayer: 'player1',
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+          });
+
+          // Her iki oyuncuya da bilgi ver
+          database.ref(`matchmaking/${childSnapshot.key}`).update({
+            gameId: gameId,
+            playerRole: 'player1',
+            status: 'matched'
+          });
+          
+          matchmakingRef.update({
+            gameId: gameId,
+            playerRole: 'player2',
+            status: 'matched'
+          });
+          
+          // Eşleşme kayıtlarını temizle
+          setTimeout(() => {
+            database.ref(`matchmaking/${childSnapshot.key}`).remove();
+            matchmakingRef.remove();
+          }, 5000);
+          
+          return true; // Döngüyü sonlandır
+        }
+      });
+    });
+  }
+
+  function joinOnlineGame(gameId, role) {
+    playerRole = role;
+    currentGameRef = database.ref(`games/${gameId}`);
+    
+    matchStatusText.textContent = `Eşleşme bulundu! Oyun ID: ${gameId}`;
+    matchProgress.style.display = 'none';
+    
+    currentGameRef.on('value', (snapshot) => {
+      const game = snapshot.val();
+      if (!game) return;
+  // BURAYA EK: obstacles henüz hazır değilse bekle
+  if (game.status === 'playing' && (!game.obstacles || Object.keys(game.obstacles).length === 0)) {
+    return; // obstacles henüz hazır değil
+  }
+
+  startOnlineGame(game);
+
+  if (game.moves) {
+    processOnlineMoves(game.moves);
+  }
+
+  if (game.winner) {
+    showOnlineResult(game.winner);
       }
     });
-  </script>
+  }
+
+  function startOnlineGame(gameData) {
+    isOnlineGame = true;
+    gameActive = true;
+    
+    // Grid boyutlarını ve zorluğu ayarla
+    gridW = gameData.config.gridWidth;
+    gridH = gameData.config.gridHeight;
+    difficultySelect.value = gameData.config.difficulty;
+    
+    // UI güncellemeleri
+    document.getElementById('gridWidth').value = gridW;
+    document.getElementById('gridHeight').value = gridH;
+    
+    // Engel ve kilitli noktaları senkronize et
+    obstacles = gameData.obstacles || [];
+    
+    // Kimin sırası olduğunu belirle
+    currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
+    
+    resizeCanvas();
+    updateOnlineStatus(`Oyun başladı! (Sıra: ${currentPlayer === 1 ? 'Sen' : 'Rakip'})`, playerRole);
+  }
+
+  function sendOnlineMove(move) {
+    currentGameRef.child('moves').push({
+      ...move,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+    
+    // Sırayı değiştir
+    const nextPlayer = playerRole === 'player1' ? 'player2' : 'player1';
+    currentGameRef.update({
+      currentPlayer: nextPlayer
+    });
+  }
+
+  function processOnlineMoves(moves) {
+    Object.entries(moves).forEach(([moveId, move]) => {
+      if (!isMoveProcessed(move)) {
+        processMoveLocally(move);
+      }
+    });
+  }
+
+  function isMoveProcessed(move) {
+    return edges.some(e => 
+      e.from.x === move.from.x && e.from.y === move.from.y &&
+      e.to.x === move.to.x && e.to.y === move.to.y &&
+      e.player === move.player
+    );
+  }
+
+  function endOnlineGame(winner) {
+    const winnerText = winner === 1 ? 
+      (playerRole === 'player1' ? "Tebrikler Kazandınız!" : "Maalesef Kaybettiniz!") :
+      (playerRole === 'player2' ? "Tebrikler Kazandınız!" : "Maalesef Kaybettiniz!");
+    
+    currentGameRef.update({ 
+      winner: winner,
+      status: 'finished',
+      endedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      showWinner(winner, winnerText);
+      cleanupOnlineGame();
+    });
+  }
+
+  function showOnlineResult(winner) {
+    const isWinner = winner === (playerRole === 'player1' ? 1 : 2);
+    if (isWinner) {
+      winnerText.textContent = "Tebrikler Kazandınız!";
+      winnerModal.style.display = 'flex';
+    } else {
+      loserText.textContent = "Maalesef Kaybettiniz!";
+      loserModal.style.display = 'flex';
+    }
+    cleanupOnlineGame();
+  }
+
+  function cleanupOnlineGame() {
+    if (currentGameRef) {
+      currentGameRef.off();
+      currentGameRef = null;
+    }
+    if (matchmakingRef) {
+      matchmakingRef.off();
+      matchmakingRef.remove();
+      matchmakingRef = null;
+    }
+    if (matchTimeout) {
+      clearTimeout(matchTimeout);
+    }
+    isOnlineGame = false;
+    playerRole = null;
+    updateOnlineStatus('', '');
+    findMatchBtn.disabled = false;
+    matchStatus.style.display = 'none';
+    matchProgress.style.display = 'block';
+  }
+
+  function updateOnlineStatus(text, role) {
+    const statusElement = document.getElementById('onlineStatus');
+    const textElement = document.getElementById('gameStatusText');
+    const badgeElement = document.getElementById('playerRoleBadge');
+    
+    textElement.textContent = text;
+    badgeElement.textContent = role === 'player1' ? 'Oyuncu 1' : 'Oyuncu 2';
+    badgeElement.className = 'badge ' + (role === 'player1' ? 'player1-badge' : 'player2-badge');
+    
+    statusElement.style.display = text ? 'block' : 'none';
+  }
+
+  function generateGameId() {
+    return 'game-' + Math.random().toString(36).substr(2, 8);
+  }
+
+  function showWinner(winner, text) {
+    if (winner === 1) {
+      winnerText.textContent = text;
+      winnerModal.style.display = 'flex';
+    } else {
+      loserText.textContent = text;
+      loserModal.style.display = 'flex';
+    }
+  }
+
+  // Bağlantı kontrolü
+  function setupConnectionMonitoring() {
+    const connectedRef = database.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+      if (snap.val() === false) {
+        // Bağlantı kesildi
+        if (isOnlineGame && gameActive) {
+          endOnlineGame(playerRole === 'player1' ? 2 : 1);
+        }
+        if (matchmakingRef) {
+          matchmakingRef.remove();
+        }
+      }
+    });
+  }
+
+  // Oyun başlatma
+  function startGame() {
+    const mode = modeSelect.value;
+    
+    gridW = parseInt(document.getElementById('gridWidth').value);
+    gridH = parseInt(document.getElementById('gridHeight').value);
+    edges = [];
+    lastPoint = null;
+    gameActive = true;
+    
+    if (mode !== 'online') {
+      generateObstacles();
+      currentPlayer = mode === 'robot' ? 2 : 1; // Robot modunda robot başlasın
+      if (mode === 'robot' && currentPlayer === 2) {
+        setTimeout(robotMove, 500);
+      }
+    }
+    
+    winnerModal.style.display = 'none';
+    loserModal.style.display = 'none';
+    resizeCanvas();
+  }
+
+  // Mod seçimi değiştiğinde
+  modeSelect.addEventListener('change', function() {
+    if (this.value === 'online') {
+      document.getElementById('onlinePanel').style.display = 'block';
+      document.getElementById('firstMoveHelp').style.display = 'none';
+      document.getElementById('findMatchBtn').disabled = false;
+      document.getElementById('matchStatus').style.display = 'none';
+    } else {
+      document.getElementById('onlinePanel').style.display = 'none';
+      document.getElementById('firstMoveHelp').style.display = 'block';
+      if (currentGameRef) {
+        cleanupOnlineGame();
+      }
+      if (matchmakingRef) {
+        matchmakingRef.remove();
+        matchmakingRef = null;
+      }
+    }
+  });
+
+  // Eşleşme butonu
+  findMatchBtn.addEventListener('click', findOnlineMatch);
+
+  // Sayfa yüklendiğinde
+  window.addEventListener('DOMContentLoaded', function() {
+    initTutorial();
+    if (modeSelect.value !== 'online') { startGame(); }
+    startGame();
+    setupConnectionMonitoring();
+  });
+  
+  window.addEventListener('resize', resizeCanvas);
+
+  // Öğretici fonksiyonları
+  function initTutorial() {
+    const tutorialModal = document.getElementById('tutorialModal');
+    const closeTutorial = document.getElementById('closeTutorial');
+    const prevBtn = document.getElementById('prevStep');
+    const nextBtn = document.getElementById('nextStep');
+    const skipBtn = document.getElementById('skipTutorial');
+    const steps = document.querySelectorAll('.tutorial-step');
+    let currentStep = 1;
+
+    // Öğretici canvaslarını çiz
+    drawTutorialCanvases();
+
+    closeTutorial.addEventListener('click', () => {
+      tutorialModal.style.display = 'none';
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentStep < steps.length) {
+        document.querySelector(`.tutorial-step[data-step="${currentStep}"]`).style.display = 'none';
+        currentStep++;
+        document.querySelector(`.tutorial-step[data-step="${currentStep}"]`).style.display = 'block';
+        prevBtn.disabled = currentStep === 1;
+        nextBtn.textContent = currentStep === steps.length ? 'Bitir' : 'Sonraki';
+      } else {
+        tutorialModal.style.display = 'none';
+      }
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if (currentStep > 1) {
+        document.querySelector(`.tutorial-step[data-step="${currentStep}"]`).style.display = 'none';
+        currentStep--;
+        document.querySelector(`.tutorial-step[data-step="${currentStep}"]`).style.display = 'block';
+        prevBtn.disabled = currentStep === 1;
+        nextBtn.textContent = 'Sonraki';
+      }
+    });
+
+    skipBtn.addEventListener('click', () => {
+      tutorialModal.style.display = 'none';
+    });
+  }
+
+  function drawTutorialCanvases() {
+    const canvas1 = document.getElementById('tutorialCanvas1');
+    const ctx1 = canvas1.getContext('2d');
+    drawTutorialGrid(ctx1, canvas1.width, canvas1.height);
+    drawTutorialPoint(ctx1, 0, 4, '#34A853');
+    drawTutorialPoint(ctx1, 5, 0, '#EA4335');
+
+    const canvas2 = document.getElementById('tutorialCanvas2');
+    const ctx2 = canvas2.getContext('2d');
+    drawTutorialGrid(ctx2, canvas2.width, canvas2.height);
+    drawTutorialPoint(ctx2, 0, 4, '#34A853');
+    drawTutorialPoint(ctx2, 5, 0, '#EA4335');
+    drawTutorialPoint(ctx2, 0, 3, '#4285F4', true);
+    drawTutorialPoint(ctx2, 1, 4, '#4285F4', true);
+    drawTutorialLine(ctx2, 0, 4, 1, 4, '#5e35b1');
+
+    const canvas3 = document.getElementById('tutorialCanvas3');
+    const ctx3 = canvas3.getContext('2d');
+    drawTutorialGrid(ctx3, canvas3.width, canvas3.height);
+    drawTutorialPoint(ctx3, 0, 4, '#34A853');
+    drawTutorialPoint(ctx3, 5, 0, '#EA4335');
+    drawTutorialLine(ctx3, 0, 4, 1, 4, '#5e35b1');
+    drawTutorialLine(ctx3, 1, 4, 2, 3, '#5e35b1');
+    drawTutorialLine(ctx3, 2, 3, 3, 2, '#5e35b1');
+    drawTutorialLine(ctx3, 3, 2, 4, 1, '#5e35b1');
+    drawTutorialPoint(ctx3, 4, 1, '#FBBC05');
+  }
+
+  function drawTutorialGrid(ctx, width, height) {
+    ctx.clearRect(0, 0, width, height);
+    const padding = width * 0.1;
+    const gridW = 6, gridH = 5;
+    
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    
+    for (let x = 0; x < gridW; x++) {
+      const px = padding + (x * (width - 2*padding)) / (gridW - 1);
+      ctx.beginPath();
+      ctx.moveTo(px, padding);
+      ctx.lineTo(px, height - padding);
+      ctx.stroke();
+    }
+    
+    for (let y = 0; y < gridH; y++) {
+      const py = padding + (y * (height - 2*padding)) / (gridH - 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, py);
+      ctx.lineTo(width - padding, py);
+      ctx.stroke();
+    }
+  }
+
+  function drawTutorialPoint(ctx, x, y, color, isHollow = false) {
+    const padding = ctx.canvas.width * 0.1;
+    const px = padding + (x * (ctx.canvas.width - 2*padding)) / 5;
+    const py = padding + (y * (ctx.canvas.height - 2*padding)) / 4;
+    
+    ctx.beginPath();
+    ctx.arc(px, py, 10, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    
+    if (isHollow) {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  function drawTutorialLine(ctx, x1, y1, x2, y2, color) {
+    const padding = ctx.canvas.width * 0.1;
+    const p1x = padding + (x1 * (ctx.canvas.width - 2*padding)) / 5;
+    const p1y = padding + (y1 * (ctx.canvas.height - 2*padding)) / 4;
+    const p2x = padding + (x2 * (ctx.canvas.width - 2*padding)) / 5;
+    const p2y = padding + (y2 * (ctx.canvas.height - 2*padding)) / 4;
+    
+    ctx.beginPath();
+    ctx.moveTo(p1x, p1y);
+    ctx.lineTo(p2x, p2y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+
+  // Diğer event listener'lar
+  startButton.addEventListener('click', () => {
+    if (modeSelect.value !== 'online') {
+      startGame();
+    }
+  });
+  playAgainBtn.addEventListener('click', startGame);
+  tryAgainBtn.addEventListener('click', startGame);
+  helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
+  closeModal.addEventListener('click', () => helpModal.style.display = 'none');
+</script>
 </body>
 </html>
