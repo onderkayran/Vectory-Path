@@ -1519,3 +1519,33 @@ window.endGame = function(winner) {
 
 window.addEventListener("load", loadStats);
 </script>
+
+
+
+<script>
+// Canvas tıklama ve dokunma desteği
+canvas.addEventListener("click", handleCanvasClick);
+canvas.addEventListener("touchstart", function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+  handleCanvasEvent(x, y);
+});
+
+function handleCanvasClick(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  handleCanvasEvent(x, y);
+}
+
+// Bu fonksiyon tıklanan veya dokunulan grid noktasını bulup işleme sokar
+function handleCanvasEvent(x, y) {
+  const cellWidth = canvas.width / gridW;
+  const cellHeight = canvas.height / gridH;
+  const cx = Math.floor(x / cellWidth);
+  const cy = Math.floor(y / cellHeight);
+  handleClick(cx, cy);
+}
+</script>
