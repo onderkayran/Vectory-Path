@@ -56,12 +56,12 @@
       color: #777;
     }
     .winner-modal {
-      background-color: #EA4335;
+      background-color: #34A853;
       color: white;
       text-align: center;
     }
     .loser-modal {
-      background-color: #34A853;
+      background-color: #EA4335;
       color: white;
       text-align: center;
     }
@@ -180,7 +180,16 @@
     Oyuna başlamak için <span style="color:#34A853;font-weight:bold;">sol alt köşeye (yeşil nokta)</span> komşu olan noktalardan birine tıklayın.
   </div>
 
-  <div id="onlinePanel" class="mt-4 p-3 border rounded bg-light" style="display: none;">
+  
+<!-- Eklenen: Oyundan Ayrıl Butonu -->
+<button id="leaveGameBtn" class="btn btn-danger w-100 mb-2" style="display:none;">Oyundan Ayrıl</button>
+
+<!-- Eklenen: Hamle Süresi Göstergesi -->
+<div id="turnTimer" class="alert alert-warning text-center fw-bold" style="display:none;">
+  Süreniz: <span id="timeLeft">20</span> saniye
+</div>
+
+<div id="onlinePanel" class="mt-4 p-3 border rounded bg-light" style="display: none;">
     <h5 class="text-center mb-3 fw-bold">Online Oyun</h5>
     <button id="findMatchBtn" class="btn btn-primary w-100 mb-2">Eşleşme Bul</button>
     <div id="matchStatus" class="alert alert-info mt-3">
@@ -1010,7 +1019,7 @@ canvas.addEventListener("touchstart", function(e) {
     currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
     
     resizeCanvas();
-    updateOnlineStatus(`Oyun başladı! (Sıra: ${currentPlayer === 1 ? 'Sen' : 'Rakip'})`, playerRole);
+    updateOnlineStatus(`Oyun başladı! (Sıra: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'Sen' : 'Rakip'})`, playerRole);
   }
 
   function sendOnlineMove(move) {
@@ -1162,7 +1171,13 @@ canvas.addEventListener("touchstart", function(e) {
       document.getElementById('firstMoveHelp').style.display = 'none';
       document.getElementById('findMatchBtn').disabled = false;
       document.getElementById('matchStatus').style.display = 'none';
-    } else {
+    
+  // 🔧 Robot oyunundan kalan sahneyi temizle
+  edges = [];
+  lastPoint = null;
+  obstacles = [];
+  drawGrid();
+} else {
       document.getElementById('onlinePanel').style.display = 'none';
       document.getElementById('firstMoveHelp').style.display = 'block';
       if (currentGameRef) {
@@ -1328,6 +1343,83 @@ canvas.addEventListener("touchstart", function(e) {
   helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
   closeModal.addEventListener('click', () => helpModal.style.display = 'none');
 </script>
+
+<script>
+let moveTimer = null;
+let moveTimeLeft = 20;
+
+function startMoveTimer() {
+  clearInterval(moveTimer);
+  moveTimeLeft = 20;
+  document.getElementById("turnTimer").style.display = 'block';
+  document.getElementById("timeLeft").textContent = moveTimeLeft;
+
+  moveTimer = setInterval(() => {
+    moveTimeLeft--;
+    document.getElementById("timeLeft").textContent = moveTimeLeft;
+    if (moveTimeLeft <= 0) {
+      clearInterval(moveTimer);
+      if (isOnlineGame && gameActive) {
+        endOnlineGame(playerRole === 'player1' ? 2 : 1);
+      }
+    }
+  }, 1000);
+}
+
+const originalProcessMoveLocally = processMoveLocally;
+processMoveLocally = function(move) {
+  originalProcessMoveLocally(move);
+  const opponentPlayer = playerRole === 'player1' ? 2 : 1;
+  if (isOnlineGame && move.player === opponentPlayer) {
+    startMoveTimer();
+  }
+};
+
+const originalStartOnlineGame = startOnlineGame;
+startOnlineGame = function(gameData) {
+  originalStartOnlineGame(gameData);
+  const isMyTurn = (playerRole === 'player1' && gameData.currentPlayer === 'player1') ||
+                     (playerRole === 'player2' && gameData.currentPlayer === 'player2');
+  if (isMyTurn) startMoveTimer();
+};
+
+const originalEndOnlineGame = endOnlineGame;
+endOnlineGame = function(winner) {
+  clearInterval(moveTimer);
+  document.getElementById("turnTimer").style.display = 'none';
+  originalEndOnlineGame(winner);
+};
+
+function leaveOnlineGame() {
+  if (!isOnlineGame || !currentGameRef) return;
+  const winner = playerRole === 'player1' ? 2 : 1;
+  currentGameRef.update({
+    winner: winner,
+    status: 'finished',
+    endedAt: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    alert("Oyundan ayrıldınız. Rakip kazandı.");
+    cleanupOnlineGame();
+  });
+}
+
+document.getElementById('leaveGameBtn').addEventListener('click', leaveOnlineGame);
+
+const originalJoinOnlineGame = joinOnlineGame;
+joinOnlineGame = function(gameId, role) {
+  originalJoinOnlineGame(gameId, role);
+  document.getElementById('leaveGameBtn').style.display = 'block';
+};
+
+const originalCleanupOnlineGame = cleanupOnlineGame;
+cleanupOnlineGame = function() {
+  clearInterval(moveTimer);
+  document.getElementById("turnTimer").style.display = 'none';
+  document.getElementById('leaveGameBtn').style.display = 'none';
+  originalCleanupOnlineGame();
+};
+</script>
+
 </body>
 </html>
 
