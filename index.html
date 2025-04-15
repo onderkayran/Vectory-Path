@@ -150,6 +150,24 @@
 }
 
 </style>
+
+<style>
+  @media (max-width: 600px) {
+    .modal-content {
+      width: 95% !important;
+      max-width: 100% !important;
+    }
+    .tutorial-canvas-container canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+    canvas {
+      height: auto !important;
+      aspect-ratio: 1 / 1 !important;
+    }
+  }
+</style>
+
 </head>
 <body>
 <div class="game-container">
@@ -1472,6 +1490,36 @@ function showResultModal(message) {
     modal.style.display = "block";
 }
 </script>
+
+<script>
+// Touch-event düzeltme
+canvas.addEventListener("touchstart", function(e) {
+  e.preventDefault(); // Varsayılan davranışı engelle
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  const mx = touch.clientX - rect.left;
+  const my = touch.clientY - rect.top;
+
+  let minDist = Infinity;
+  let closestPoint = null;
+
+  for (let y = 0; y < gridH; y++) {
+    for (let x = 0; x < gridW; x++) {
+      if (isObstacle({x, y})) continue;
+      const canvasCoords = toCanvasCoords({x, y});
+      const dist = Math.sqrt((mx - canvasCoords.x) ** 2 + (my - canvasCoords.y) ** 2);
+      if (dist < minDist && dist < 20) {
+        minDist = dist;
+        closestPoint = {x, y};
+      }
+    }
+  }
+  if (closestPoint) {
+    makeMove(closestPoint);
+  }
+}, { passive: false });
+</script>
+
 </body>
 </html>
 <script>
