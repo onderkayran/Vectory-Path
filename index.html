@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="tr">
+
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vectory Path</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vectory Path</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
     body {
       background-color: #f5f6fa;
       padding: 20px;
@@ -18,15 +19,17 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
+    
     canvas {
       border: 2px solid #e0e0e0;
-      background-color: white;
+      background-color: #e6f7f5;
       display: block;
       margin: 0 auto 20px auto;
       width: 100%;
       max-width: 450px;
       height: 450px;
     }
+
     .modal-overlay {
       display: none;
       position: fixed;
@@ -123,9 +126,17 @@
   .game-container {
     padding: 10px;
   }
-  canvas {
-    height: auto;
-  }
+  
+    canvas {
+      border: 2px solid #e0e0e0;
+      background-color: #e6f7f5;
+      display: block;
+      margin: 0 auto 20px auto;
+      width: 100%;
+      max-width: 450px;
+      height: 450px;
+    }
+
   .d-flex.flex-wrap {
     flex-direction: column;
     align-items: center;
@@ -141,142 +152,125 @@
 </style>
 </head>
 <body>
-
 <div class="game-container">
-  <h2 class="text-center text-primary fw-bold">Vectory Path</h2>
 
-  
+<h1 class="text-center fw-bold" style="background-color: #FFF8DC; color: #2c3e50; border: 2px dashed #27ae60; padding: 10px; border-radius: 10px; font-family: 'Comic Sans MS', cursive, sans-serif;">
+  <span style="filter: hue-rotate(180deg); display: inline-block;">🧠</span> Vectory Path: <em>Strategy is the Path to Victory</em> 🎯
+</h1>
 
-  <canvas id="gameCanvas"></canvas>
+<canvas id="gameCanvas"></canvas>
 <div class="d-flex flex-wrap justify-content-center gap-2 my-3">
-    <label class="me-2">Grid:</label>
-    <input type="number" id="gridWidth" class="form-control me-2" value="6" min="3" max="10" style="width: 60px;">
-    <span class="me-2">x</span>
-    <input type="number" id="gridHeight" class="form-control me-2" value="5" min="3" max="10" style="width: 60px;">
-    
-    <select id="difficultySelect" class="form-select me-2" style="width: 120px;">
-      <option value="easy">Easy</option>
-      <option value="medium">Medium</option>
-      <option value="hard">Hard</option>
-      <option value="expert" selected>Expert</option>
-    </select>
-    <select id="modeSelect" class="form-select me-2" style="width: 150px;">
-      <option value="robot" selected>Robot ile Oyna</option>
-      <option value="online">Online Oyna</option>
-    </select>
-    <button id="startButton" class="btn btn-primary me-2">Start</button>
-    <button id="helpButton" class="btn btn-info text-white">Help</button>
-    <button onclick="toggleStatsPopup()" class="btn btn-secondary">İstatistik</button>
+<label class="me-2">Grid:</label>
+<input class="form-control me-2" id="gridWidth" max="10" min="3" style="width: 60px;" type="number" value="6"/>
+<span class="me-2">x</span>
+<input class="form-control me-2" id="gridHeight" max="10" min="3" style="width: 60px;" type="number" value="5"/>
+<select class="form-select me-2" id="difficultySelect" style="width: 120px;">
+<option value="easy">Easy</option>
+<option value="medium">Medium</option>
+<option value="hard">Hard</option>
+<option selected="" value="expert">Expert</option>
+</select>
+<select class="form-select me-2" id="modeSelect" style="width: 150px;">
+<option selected="" value="robot">Play with Robot</option>
+<option value="online">Play Online</option>
+</select>
+<button class="btn btn-primary me-2" id="startButton">Start</button>
+<button class="btn btn-info text-white" id="helpButton">Help</button>
+<button class="btn btn-secondary" onclick="toggleStatsPopup()">Statistics</button>
+</div>
+<div class="alert alert-warning" id="onlineStatus">
+<strong>Online Game:</strong>
+<span id="gameStatusText">Connecting...</span>
+<span class="badge ms-2" id="playerRoleBadge"></span>
+</div>
+<div class="alert alert-info mt-3" id="firstMoveHelp" style="font-size: 14px;">
+<strong>First Move Tip:</strong><br/>
+    Click one of the points adjacent to the bottom-left corner (green dot) to start the game. 
   </div>
-
-  <div id="onlineStatus" class="alert alert-warning">
-    <strong>Online Oyun:</strong>
-    <span id="gameStatusText">Bağlanıyor...</span>
-    <span id="playerRoleBadge" class="badge ms-2"></span>
-  </div>
-
-  <div id="firstMoveHelp" class="alert alert-info mt-3" style="font-size: 14px;">
-    <strong>İlk Hamle Yardımı:</strong><br>
-    Oyuna başlamak için <span style="color:#34A853;font-weight:bold;">sol alt köşeye (yeşil nokta)</span> komşu olan noktalardan birine tıklayın.
-  </div>
-
-  
-<!-- Eklenen: Oyundan Ayrıl Butonu -->
-<button id="leaveGameBtn" class="btn btn-danger w-100 mb-2" style="display:none;">Oyundan Ayrıl</button>
-
+<!-- Eklenen: Leave Game Butonu -->
+<button class="btn btn-danger w-100 mb-2" id="leaveGameBtn" style="display:none;">Leave Game</button>
 <!-- Eklenen: Hamle Süresi Göstergesi -->
-<div id="turnTimer" class="alert alert-warning text-center fw-bold" style="display:none;">
-  Süreniz: <span id="timeLeft">20</span> saniye
+<div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
+  Your time: <span id="timeLeft">20</span> seconds
 </div>
-
-<div id="onlinePanel" class="mt-4 p-3 border rounded bg-light" style="display: none;">
-    <h5 class="text-center mb-3 fw-bold">Online Oyun</h5>
-    <button id="findMatchBtn" class="btn btn-primary w-100 mb-2">Eşleşme Bul</button>
-    <div id="matchStatus" class="alert alert-info mt-3">
-      <span id="matchStatusText">Eşleşme aranıyor...</span>
-      <div id="matchProgress" class="progress">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
-      </div>
-    </div>
-  </div>
+<div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;">
+<h5 class="text-center mb-3 fw-bold">Online Game</h5>
+<button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
+<div class="alert alert-info mt-3" id="matchStatus">
+<span id="matchStatusText">Searching for match...</span>
+<div class="progress" id="matchProgress">
+<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
 </div>
-
+</div>
+</div>
+</div>
 <!-- Help Modal -->
 <div class="modal-overlay" id="helpModal">
-  <div class="modal-content">
-    <span class="close-modal" id="closeModal">×</span>
-    <h4 class="text-primary">Nasıl Oynanır?</h4>
-    <p>Oyunun amacı başlangıç noktasından bitiş noktasına ulaşmaktır.</p>
-    <ul>
-      <li>Noktalar arasında çizgi çizerek ilerlenir.</li>
-      <li>Yalnızca komşu noktalara hamle yapılabilir (çapraz dahil).</li>
-      <li>X ile işaretli noktalar engeldir, kullanılamaz.</li>
-      <li>🔒 ile işaretli noktalar kilitlidir, kullanılamaz (5x5 ve üzeri gridlerde).</li>
-      <li>Rakibini hamlesiz bırakan taraf kazanır.</li>
-    </ul>
-    <h5 class="mt-3">Online Mod:</h5>
-    <p>Rastgele eşleşme ile gerçek oyuncularla oynayabilirsiniz.</p>
-  </div>
+<div class="modal-content">
+<span class="close-modal" id="closeModal">×</span>
+<h4 class="text-primary">How to Play?</h4>
+<p>The goal of the game is to reach the end point from the starting point.</p>
+<ul>
+<li>Move by drawing lines between adjacent points.</li>
+<li>You can only move to adjacent points (diagonal moves are allowed).</li>
+<li>Points marked with X are obstacles and cannot be used.</li>
+<li>Points marked with 🔒 are locked and unusable (in 5x5 or larger grids).</li>
+<li>The player who blocks the opponent from making a move wins.</li>
+</ul>
+<h5 class="mt-3">Online Mod:</h5>
+<p>You can play with real players via random matchmaking.</p>
 </div>
-
+</div>
 <!-- Tutorial Modal -->
 <div class="modal-overlay" id="tutorialModal" style="display:flex;">
-  <div class="modal-content" style="max-width:600px;">
-    <span class="close-modal" id="closeTutorial">×</span>
-    <h4 class="text-primary mb-4">Vectory Path Öğretici</h4>
-    
-    <div class="tutorial-step active" data-step="1">
-      <h5>1. Başlangıç ve Bitiş Noktaları</h5>
-      <div class="tutorial-canvas-container mb-3">
-        <canvas id="tutorialCanvas1" width="400" height="300"></canvas>
-      </div>
-      <p>Yeşil nokta (sol alt) başlangıç, kırmızı nokta (sağ üst) bitiş noktasıdır.</p>
-    </div>
-    
-    <div class="tutorial-step" data-step="2" style="display:none;">
-      <h5>2. İlk Hamleniz</h5>
-      <div class="tutorial-canvas-container mb-3">
-        <canvas id="tutorialCanvas2" width="400" height="300"></canvas>
-      </div>
-      <p>Başlangıç noktasının komşularına tıklayarak ilk hamlenizi yapın.</p>
-    </div>
-    
-    <div class="tutorial-step" data-step="3" style="display:none;">
-      <h5>3. Yol Oluşturma</h5>
-      <div class="tutorial-canvas-container mb-3">
-        <canvas id="tutorialCanvas3" width="400" height="300"></canvas>
-      </div>
-      <p>Komşu noktalar arasında çizgiler çizerek bitişe ulaşmaya çalışın.</p>
-    </div>
-    
-    <div class="d-flex justify-content-between mt-4">
-      <button id="prevStep" class="btn btn-secondary" disabled>Önceki</button>
-      <button id="nextStep" class="btn btn-primary">Sonraki</button>
-    </div>
-    <button id="skipTutorial" class="btn btn-outline-secondary mt-2 w-100">Öğreticiyi Atla</button>
-  </div>
+<div class="modal-content" style="max-width:600px;">
+<span class="close-modal" id="closeTutorial">×</span>
+<h4 class="text-primary mb-4">Vectory Path Tutorial</h4>
+<div class="tutorial-step active" data-step="1">
+<h5>1. Start and End Points</h5>
+<div class="tutorial-canvas-container mb-3">
+<canvas height="300" id="tutorialCanvas1" width="400"></canvas>
 </div>
-
+<p>The green dot (bottom-left) is the start, the red dot (top-right) is the goal.</p>
+</div>
+<div class="tutorial-step" data-step="2" style="display:none;">
+<h5>2. Your First Move</h5>
+<div class="tutorial-canvas-container mb-3">
+<canvas height="300" id="tutorialCanvas2" width="400"></canvas>
+</div>
+<p>Click on the neighbors of the starting point to make your first move.</p>
+</div>
+<div class="tutorial-step" data-step="3" style="display:none;">
+<h5>3. Creating a Path</h5>
+<div class="tutorial-canvas-container mb-3">
+<canvas height="300" id="tutorialCanvas3" width="400"></canvas>
+</div>
+<p>Draw lines between adjacent points to reach the goal.</p>
+</div>
+<div class="d-flex justify-content-between mt-4">
+<button class="btn btn-secondary" disabled="" id="prevStep">Previous</button>
+<button class="btn btn-primary" id="nextStep">Next</button>
+</div>
+<button class="btn btn-outline-secondary mt-2 w-100" id="skipTutorial">Skip Tutorial</button>
+</div>
+</div>
 <!-- Winner Modal -->
 <div class="modal-overlay" id="winnerModal" style="display:none;">
-  <div class="modal-content winner-modal">
-    <h2 id="winnerText">Tebrikler Kazandınız!</h2>
-    <button id="playAgainBtn" class="btn btn-light mt-3">Tekrar Oyna</button>
-  </div>
+<div class="modal-content winner-modal">
+<h2 id="winnerText">Congratulations, You Won!</h2>
+<button class="btn btn-light mt-3" id="playAgainBtn">Play Again</button>
 </div>
-
+</div>
 <!-- Loser Modal -->
 <div class="modal-overlay" id="loserModal" style="display:none;">
-  <div class="modal-content loser-modal">
-    <h2 id="loserText">Maalesef Kaybettiniz!</h2>
-    <button id="tryAgainBtn" class="btn btn-light mt-3">Yeni Oyun</button>
-  </div>
+<div class="modal-content loser-modal">
+<h2 id="loserText">Unfortunately, You Lost!</h2>
+<button class="btn btn-light mt-3" id="tryAgainBtn">New Game</button>
 </div>
-
+</div>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
 <script>
   // Firebase konfigürasyonu
   const firebaseConfig = {
@@ -609,12 +603,12 @@
       endOnlineGame(winner);
     } else {
       if (winner === 1) {
-        winnerText.textContent = "Maalesef Kaybettiniz!";
+        winnerText.textContent = "Unfortunately, You Lost!";
         winnerModal.style.display = 'flex';
       } else {
         loserText.textContent = modeSelect.value === 'robot' 
-          ? "Tebrikler Kazandınız!" 
-          : "Maalesef Kaybettiniz!";
+          ? "Congratulations, You Won!" 
+          : "Unfortunately, You Lost!";
         loserModal.style.display = 'flex';
       }
     }
@@ -885,7 +879,7 @@ canvas.addEventListener("touchstart", function(e) {
   // Online oyun fonksiyonları
   function findOnlineMatch() {
     matchStatus.style.display = 'block';
-    matchStatusText.textContent = "Eşleşme aranıyor...";
+    matchStatusText.textContent = "Searching for match...";
     findMatchBtn.disabled = true;
     
     // Eşleşme kuyruğuna ekle
@@ -917,7 +911,7 @@ canvas.addEventListener("touchstart", function(e) {
       }
     });
 
-    // Eşleşme bulmaya çalış (30 saniye içinde)
+    // Eşleşme bulmaya çalış (30 seconds içinde)
     matchTimeout = setTimeout(() => {
       matchmakingRef.transaction((currentData) => {
         if (currentData && currentData.status === 'waiting') {
@@ -976,7 +970,7 @@ canvas.addEventListener("touchstart", function(e) {
     playerRole = role;
     currentGameRef = database.ref(`games/${gameId}`);
     
-    matchStatusText.textContent = `Eşleşme bulundu! Oyun ID: ${gameId}`;
+    matchStatusText.textContent = `Match found! Game ID: ${gameId}`;
     matchProgress.style.display = 'none';
     
     currentGameRef.on('value', (snapshot) => {
@@ -993,7 +987,7 @@ canvas.addEventListener("touchstart", function(e) {
     processOnlineMoves(game.moves);
   }
 
-  if (game.winner) {
+  if (game.winner && !hasShownResult) {
     showOnlineResult(game.winner);
       }
     });
@@ -1019,7 +1013,7 @@ canvas.addEventListener("touchstart", function(e) {
     currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
     
     resizeCanvas();
-    updateOnlineStatus(`Oyun başladı! (Sıra: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'Sen' : 'Rakip'})`, playerRole);
+    updateOnlineStatus(`Game started! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
   }
 
   function sendOnlineMove(move) {
@@ -1052,27 +1046,30 @@ canvas.addEventListener("touchstart", function(e) {
   }
 
   function endOnlineGame(winner) {
-    const winnerText = winner === 1 ? 
-      (playerRole === 'player1' ? "Tebrikler Kazandınız!" : "Maalesef Kaybettiniz!") :
-      (playerRole === 'player2' ? "Tebrikler Kazandınız!" : "Maalesef Kaybettiniz!");
-    
-    currentGameRef.update({ 
-      winner: winner,
-      status: 'finished',
-      endedAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      showWinner(winner, winnerText);
-      cleanupOnlineGame();
-    });
-  }
+  currentGameRef.update({ 
+    winner: winner,
+    status: 'finished',
+    endedAt: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    const isWinner = winner === (playerRole === 'player1' ? 1 : 2);
+    if (isWinner) {
+      document.getElementById("winnerText").textContent = "Congratulations, You Won!";
+      document.getElementById("winnerModal").style.display = 'flex';
+    } else {
+      document.getElementById("loserText").textContent = "Unfortunately, You Lost!";
+      document.getElementById("loserModal").style.display = 'flex';
+    }
+    cleanupOnlineGame();
+  });
+}
 
   function showOnlineResult(winner) {
     const isWinner = winner === (playerRole === 'player1' ? 1 : 2);
     if (isWinner) {
-      winnerText.textContent = "Tebrikler Kazandınız!";
+      winnerText.textContent = "Congratulations, You Won!";
       winnerModal.style.display = 'flex';
     } else {
-      loserText.textContent = "Maalesef Kaybettiniz!";
+      loserText.textContent = "Unfortunately, You Lost!";
       loserModal.style.display = 'flex';
     }
     cleanupOnlineGame();
@@ -1105,7 +1102,7 @@ canvas.addEventListener("touchstart", function(e) {
     const badgeElement = document.getElementById('playerRoleBadge');
     
     textElement.textContent = text;
-    badgeElement.textContent = role === 'player1' ? 'Oyuncu 1' : 'Oyuncu 2';
+    badgeElement.textContent = role === 'player1' ? 'Player 1' : 'Player 2';
     badgeElement.className = 'badge ' + (role === 'player1' ? 'player1-badge' : 'player2-badge');
     
     statusElement.style.display = text ? 'block' : 'none';
@@ -1226,7 +1223,7 @@ canvas.addEventListener("touchstart", function(e) {
         currentStep++;
         document.querySelector(`.tutorial-step[data-step="${currentStep}"]`).style.display = 'block';
         prevBtn.disabled = currentStep === 1;
-        nextBtn.textContent = currentStep === steps.length ? 'Bitir' : 'Sonraki';
+        nextBtn.textContent = currentStep === steps.length ? 'Finish' : 'Next';
       } else {
         tutorialModal.style.display = 'none';
       }
@@ -1238,7 +1235,7 @@ canvas.addEventListener("touchstart", function(e) {
         currentStep--;
         document.querySelector(`.tutorial-step[data-step="${currentStep}"]`).style.display = 'block';
         prevBtn.disabled = currentStep === 1;
-        nextBtn.textContent = 'Sonraki';
+        nextBtn.textContent = 'Next';
       }
     });
 
@@ -1343,7 +1340,6 @@ canvas.addEventListener("touchstart", function(e) {
   helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
   closeModal.addEventListener('click', () => helpModal.style.display = 'none');
 </script>
-
 <script>
 let moveTimer = null;
 let moveTimeLeft = 20;
@@ -1370,8 +1366,14 @@ const originalProcessMoveLocally = processMoveLocally;
 processMoveLocally = function(move) {
   originalProcessMoveLocally(move);
   const opponentPlayer = playerRole === 'player1' ? 2 : 1;
-  if (isOnlineGame && move.player === opponentPlayer) {
-    startMoveTimer();
+  if (isOnlineGame) {
+    const isMyTurnNow = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
+    if (isMyTurnNow) {
+      startMoveTimer();
+    } else {
+      clearInterval(moveTimer);
+      document.getElementById("turnTimer").style.display = 'none';
+    }
   }
 };
 
@@ -1380,7 +1382,12 @@ startOnlineGame = function(gameData) {
   originalStartOnlineGame(gameData);
   const isMyTurn = (playerRole === 'player1' && gameData.currentPlayer === 'player1') ||
                      (playerRole === 'player2' && gameData.currentPlayer === 'player2');
-  if (isMyTurn) startMoveTimer();
+  if (isMyTurn) {
+    startMoveTimer();
+  } else {
+    clearInterval(moveTimer);
+    document.getElementById("turnTimer").style.display = 'none';
+  }
 };
 
 const originalEndOnlineGame = endOnlineGame;
@@ -1398,7 +1405,7 @@ function leaveOnlineGame() {
     status: 'finished',
     endedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
-    alert("Oyundan ayrıldınız. Rakip kazandı.");
+    alert("You left the game. The opponent wins.");
     cleanupOnlineGame();
   });
 }
@@ -1419,11 +1426,8 @@ cleanupOnlineGame = function() {
   originalCleanupOnlineGame();
 };
 </script>
-
 </body>
 </html>
-
-
 <script>
 function isVictory(p) {
   return p.x === gridW - 1 && p.y === 0;
@@ -1576,11 +1580,6 @@ function robotMove() {
   }
 }
 </script>
-
-
-
-
-
 <script>
 function toggleStatsPopup() {
   const popup = document.getElementById("statsPopup");
@@ -1618,22 +1617,17 @@ window.endGame = function(winner) {
 
 window.addEventListener("load", loadStats);
 </script>
-
-
-<!-- 📊 İstatistik Göster Butonu -->
-
-
+<!-- 📊 Statistics Göster Butonu -->
 <!-- Popup Panel -->
 <div id="statsPopup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
 background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-shadow: 0 0 10px rgba(0,0,0,0.5); border-radius: 10px;">
-  <h3>İstatistikler</h3>
-  <p>Kazanç: <span id="wins">0</span></p>
-  <p>Kayıp: <span id="losses">0</span></p>
-  <p>Oynanan Oyun: <span id="gamesPlayed">0</span></p>
-  <p>Kazanma Oranı: <span id="winRate">0%</span></p>
-  <button onclick="toggleStatsPopup()">Kapat</button>
+<h3>Statisticsler</h3>
+<p>Wins: <span id="wins">0</span></p>
+<p>Losses: <span id="losses">0</span></p>
+<p>Games Played: <span id="gamesPlayed">0</span></p>
+<p>Win Rate: <span id="winRate">0%</span></p>
+<button onclick="toggleStatsPopup()">Close</button>
 </div>
-
 <style>
 @media (max-width: 600px) {
   #statsPopup {
@@ -1646,9 +1640,17 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
   .game-container {
     padding: 10px;
   }
-  canvas {
-    height: auto;
-  }
+  
+    canvas {
+      border: 2px solid #e0e0e0;
+      background-color: #e6f7f5;
+      display: block;
+      margin: 0 auto 20px auto;
+      width: 100%;
+      max-width: 450px;
+      height: 450px;
+    }
+
   .d-flex.flex-wrap {
     flex-direction: column;
     align-items: center;
@@ -1662,8 +1664,6 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 }
 
 </style>
-
-
 <script>
 function toggleStatsPopup() {
   const popup = document.getElementById("statsPopup");
