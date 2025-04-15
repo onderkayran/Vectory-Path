@@ -305,6 +305,7 @@
   const database = firebase.database();
 
   // Oyun durumu
+let hasShownResult = false;
   let gridW = 6, gridH = 5;
   let edges = [];
   let currentPlayer = 1;
@@ -614,17 +615,24 @@
 
   function endGame(winner) {
     gameActive = false;
-    
+
     if (isOnlineGame) {
       endOnlineGame(winner);
     } else {
-      if (winner === 1) {
-        winnerText.textContent = "Unfortunately, You Lost!";
+      if (modeSelect.value === 'robot') {
+        if (winner === 2) {
+            winnerText.textContent = "Congratulations, You Won!";
+            winnerModal.style.display = 'flex';
+        } else {
+            loserText.textContent = "Unfortunately, You Lost!";
+            loserModal.style.display = 'flex';
+        }
+    } else if (winner === 1) {
+        winnerText.textContent = "Congratulations, You Won!";
+        winnerModal.style.display = 'flex';
         winnerModal.style.display = 'flex';
       } else {
-        loserText.textContent = modeSelect.value === 'robot' 
-          ? "Congratulations, You Won!" 
-          : "Unfortunately, You Lost!";
+        loserText.textContent = modeSelect.value === 'robot' ? "Unfortunately, You Lost!" : "Congratulations, You Won!";
         loserModal.style.display = 'flex';
       }
     }
@@ -1062,12 +1070,14 @@ canvas.addEventListener("touchstart", function(e) {
   }
 
   function endOnlineGame(winner) {
+  if (hasShownResult) return;
+  hasShownResult = true;
   currentGameRef.update({ 
     winner: winner,
     status: 'finished',
     endedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
-    const isWinner = winner === (playerRole === 'player1' ? 1 : 2);
+    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       document.getElementById("winnerText").textContent = "Congratulations, You Won!";
       document.getElementById("winnerModal").style.display = 'flex';
@@ -1080,7 +1090,9 @@ canvas.addEventListener("touchstart", function(e) {
 }
 
   function showOnlineResult(winner) {
-    const isWinner = winner === (playerRole === 'player1' ? 1 : 2);
+  if (hasShownResult) return;
+  hasShownResult = true;
+    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       winnerText.textContent = "Congratulations, You Won!";
       winnerModal.style.display = 'flex';
