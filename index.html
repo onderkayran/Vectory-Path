@@ -806,52 +806,7 @@ let hasShownResult = false;
   // Tıklama işleyici
   canvas.addEventListener("click", function(e) {
 
-canvas.addEventListener("touchstart", function(e) {
-  if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
-  const rect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  const mx = touch.clientX - rect.left;
-  const my = touch.clientY - rect.top;
-
-  let minDist = Infinity;
-  let closestPoint = null;
-
-  for (let y = 0; y < gridH; y++) {
-    for (let x = 0; x < gridW; x++) {
-      if (isObstacle({x, y})) continue;
-      const canvasCoords = toCanvasCoords({x, y});
-      const dist = Math.sqrt(Math.pow(mx - canvasCoords.x, 2) + Math.pow(my - canvasCoords.y, 2));
-      if (dist < minDist && dist < 20) {
-        minDist = dist;
-        closestPoint = {x, y};
-      }
-    }
-  }
-
-  if (!closestPoint) return;
-
-  const clicked = closestPoint;
-  const startPoint = { x: 0, y: gridH - 1 };
-
-  if (isEndPoint(clicked)) {
-    if (lastPoint && isAdjacent(lastPoint, clicked) && !isObstacle(clicked)) {
-      makeMove(clicked);
-    }
-    return;
-  }
-
-  if (!lastPoint) {
-    if (isAdjacent(startPoint, clicked) && !edgeExists(startPoint, clicked) && !isObstacle(clicked)) {
-      makeMove(clicked);
-    }
-    return;
-  }
-
-  if (isAdjacent(lastPoint, clicked) && !edgeExists(lastPoint, clicked) && !isObstacle(clicked)) {
-    makeMove(clicked);
-  }
-});
 
     if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
