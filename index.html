@@ -580,7 +580,13 @@ let hasShownResult = false;
 
   // Hamle yap
   function makeMove(point) {
-    if (!gameActive || isLocked(point)) return;
+  if (!lastPoint) {
+    const start = { x: 0, y: gridH - 1 };
+    if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
+  } else {
+    if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
+  }
+if (!gameActive || isLocked(point)) return;
 
     const move = {
       from: lastPoint || { x: 0, y: gridH - 1 },
