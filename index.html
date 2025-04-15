@@ -153,11 +153,9 @@
 </head>
 <body>
 <div class="game-container">
-
-<h1 class="text-center fw-bold" style="background-color: #FFF8DC; color: #2c3e50; border: 2px dashed #27ae60; padding: 10px; border-radius: 10px; font-family: 'Comic Sans MS', cursive, sans-serif;">
-  <span style="filter: hue-rotate(180deg); display: inline-block;">🧠</span> Vectory Path: <em>Strategy is the Path to Victory</em> 🎯
+<h1 class="text-center fw-bold" style="font-family: 'Pacifico', cursive; font-size: 2.5rem; color: #2c3e50; margin-bottom: 20px; background: linear-gradient(to right, #f9d423, #ff4e50); padding: 10px 20px; border-radius: 12px; color: white;">
+  Vectory Path
 </h1>
-
 <canvas id="gameCanvas"></canvas>
 <div class="d-flex flex-wrap justify-content-center gap-2 my-3">
 <label class="me-2">Grid:</label>
@@ -257,14 +255,14 @@
 <!-- Winner Modal -->
 <div class="modal-overlay" id="winnerModal" style="display:none;">
 <div class="modal-content winner-modal">
-<h2 id="winnerText">Congratulations, You Won!</h2>
+<h2 id="winnerText" style="background-color: #34A853; color: white; padding: 15px; border-radius: 10px;">Congratulations, You Won!</h2>
 <button class="btn btn-light mt-3" id="playAgainBtn">Play Again</button>
 </div>
 </div>
 <!-- Loser Modal -->
 <div class="modal-overlay" id="loserModal" style="display:none;">
 <div class="modal-content loser-modal">
-<h2 id="loserText">Unfortunately, You Lost!</h2>
+<h2 id="loserText" style="background-color: #EA4335; color: white; padding: 15px; border-radius: 10px;">Unfortunately, You Lost!</h2>
 <button class="btn btn-light mt-3" id="tryAgainBtn">New Game</button>
 </div>
 </div>
@@ -1425,6 +1423,54 @@ cleanupOnlineGame = function() {
   document.getElementById('leaveGameBtn').style.display = 'none';
   originalCleanupOnlineGame();
 };
+</script>
+<script>
+function updateWinnerBackground() {
+  const winnerText = document.getElementById("winnerText");
+  const loserText = document.getElementById("loserText");
+
+  if (winnerText) {
+    const text = winnerText.textContent.toLowerCase();
+    if (text.includes("congratulations")) {
+      winnerText.style.backgroundColor = "#34A853";
+      winnerText.style.color = "white";
+    } else if (text.includes("unfortunately")) {
+      winnerText.style.backgroundColor = "#EA4335";
+      winnerText.style.color = "white";
+    }
+  }
+
+  if (loserText) {
+    const text = loserText.textContent.toLowerCase();
+    if (text.includes("unfortunately")) {
+      loserText.style.backgroundColor = "#EA4335";
+      loserText.style.color = "white";
+    } else if (text.includes("congratulations")) {
+      loserText.style.backgroundColor = "#34A853";
+      loserText.style.color = "white";
+    }
+  }
+}
+
+// Yazıların görünmesi biraz zaman alabilir, bu yüzden gecikmeli çalıştır
+setTimeout(updateWinnerBackground, 100);
+</script><script>
+function showResultModal(message) {
+    const modal = document.getElementById("resultModal");
+    const modalMessage = document.getElementById("resultMessage");
+    modalMessage.textContent = message;
+
+    // Set background color based on result
+    if (message.toLowerCase().includes("won") || message.toLowerCase().includes("congratulations")) {
+        modal.style.backgroundColor = "#4CAF50"; // green
+    } else if (message.toLowerCase().includes("lost") || message.toLowerCase().includes("unfortunately")) {
+        modal.style.backgroundColor = "#f44336"; // red
+    } else {
+        modal.style.backgroundColor = "#ffffff"; // default white
+    }
+
+    modal.style.display = "block";
+}
 </script>
 </body>
 </html>
