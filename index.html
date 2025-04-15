@@ -171,7 +171,7 @@
 </head>
 <body>
 <div class="game-container">
-<h1 class="text-center fw-bold" style="font-family: 'Pacifico', cursive; font-size: 2.5rem; color: #2c3e50; margin-bottom: 20px; background: linear-gradient(to right, #4facfe, #00f2fe); padding: 10px 20px; border-radius: 12px; color: white;">
+<h1 class="text-center fw-bold" style="font-family: 'Poppins', sans-serif; font-size: 2.5rem; color: white; margin-bottom: 20px; background: linear-gradient(to right, #4facfe, #00f2fe); padding: 10px 20px; border-radius: 12px;">
   Vectory Path
 </h1>
 <canvas id="gameCanvas"></canvas>
@@ -193,6 +193,7 @@
 <button class="btn btn-primary me-2" id="startButton">Start</button>
 <button class="btn btn-info text-white" id="helpButton">Help</button>
 <button class="btn btn-secondary" onclick="toggleStatsPopup()">Statistics</button>
+<button class="btn btn-dark" onclick="toggleDarkMode()">🌙</button>
 </div>
 <div class="alert alert-warning" id="onlineStatus">
 <strong>Online Game:</strong>
@@ -1486,6 +1487,30 @@ canvas.addEventListener("touchstart", function(e) {
   }
 }, { passive: false });
 </script>
+
+
+<script>
+function toggleDarkMode() {
+  document.body.classList.toggle("dark-mode");
+}
+</script>
+<style>
+.dark-mode {
+  background-color: #121212 !important;
+  color: #ffffff !important;
+}
+.dark-mode .game-container {
+  background-color: #1e1e1e !important;
+  color: white !important;
+}
+.dark-mode .btn {
+  border: 1px solid #ccc !important;
+}
+.dark-mode h1 {
+  background: linear-gradient(to right, #000428, #004e92) !important;
+  color: white !important;
+}
+</style>
 
 </body>
 </html>
