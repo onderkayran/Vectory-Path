@@ -981,6 +981,8 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function startOnlineGame(gameData) {
+  edges = [];
+  lastPoint = null;
     isOnlineGame = true;
     gameActive = true;
     
