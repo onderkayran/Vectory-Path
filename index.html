@@ -1063,6 +1063,7 @@ if (!gameActive || isLocked(point)) return;
 }
 
   function showOnlineResult(winner) {
+  document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
     const isWinner = winner === (playerRole === "player1" ? 1 : 2);
@@ -1566,7 +1567,7 @@ function checkGameOverOnline(lastMoveTo) {
     }
   }
 
-  if (!opponentLast) return;
+  if (!opponentLast) opponentLast = { x: 0, y: gridH - 1 };
 
   const opponentCanMove = canMove(opponentLast);
   if (!opponentCanMove) {
