@@ -1555,7 +1555,7 @@ function toggleDarkMode() {
 <script>
 // 🧠 Güncellenmiş: Rakibin pozisyonunu analiz ederek online oyunu bitir
 function checkGameOverOnline(lastMoveTo) {
-  if (!isOnlineGame || !currentGameRef || !gameActive) return;
+ if (!isOnlineGame || !currentGameRef || !gameActive) return false;
 
   const isGoal = isEndPoint(lastMoveTo);
   const isMyTurn = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
