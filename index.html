@@ -1471,6 +1471,7 @@ function showResultModal(message) {
 <script>
 // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
+  if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
   e.preventDefault(); // Varsayılan davranışı engelle
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
