@@ -1064,6 +1064,8 @@ if (!gameActive || isLocked(point)) return;
 
   function showOnlineResult(winner) {
   document.body.style.overflow = 'hidden';
+  document.getElementById(\"winnerModal\").style.zIndex = \"9999\";
+document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
     const isWinner = winner === (playerRole === "player1" ? 1 : 2);
