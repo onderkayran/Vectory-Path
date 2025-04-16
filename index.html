@@ -985,7 +985,6 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function startOnlineGame(gameData) {
-  hasShownResult = false; // Reset modal flag for mobile
   edges = [];
   lastPoint = null;
     isOnlineGame = true;
@@ -1063,22 +1062,11 @@ if (!gameActive || isLocked(point)) return;
   });
 }
 
-  
-
-
-function showOnlineResult(winner) {
+  function showOnlineResult(winner) {
   document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
-
-  const myPlayerNum = (playerRole === "player1") ? 1 : 2;
-  const isWinner = winner === myPlayerNum;
-
-  // Reset both modals first
-  winnerModal.style.display = 'none';
-  loserModal.style.display = 'none';
-
-  setTimeout(() => {
+    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       winnerText.textContent = "Congratulations, You Won!";
       winnerModal.style.display = 'flex';
@@ -1086,13 +1074,8 @@ function showOnlineResult(winner) {
       loserText.textContent = "Unfortunately, You Lost!";
       loserModal.style.display = 'flex';
     }
-  }, 100);
-
-  cleanupOnlineGame();
-}
-
-
-
+    cleanupOnlineGame();
+  }
 
   function cleanupOnlineGame() {
     if (currentGameRef) {
