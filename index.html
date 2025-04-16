@@ -1527,12 +1527,12 @@ function toggleDarkMode() {
 
 
 <script>
-// 🧠 Yeni: Hamleden sonra oyunun bitip bitmediğini kontrol et (online icin)
+// 🧠 Güncellenmiş: Rakibin pozisyonunu analiz ederek online oyunu bitir
 function checkGameOverOnline(lastMoveTo) {
   if (!isOnlineGame || !currentGameRef || !gameActive) return;
 
   const isGoal = isEndPoint(lastMoveTo);
-  const opponentId = (playerRole === 'player1') ? 'player2' : 'player1';
+  const isMyTurn = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
   const winnerId = (playerRole === 'player1') ? 1 : 2;
 
   if (isGoal) {
@@ -1544,8 +1544,22 @@ function checkGameOverOnline(lastMoveTo) {
     return;
   }
 
-  // Rakibin hic hamlesi yoksa, yine oyun biter
-  const opponentCanMove = canMove(lastMoveTo);
+  // Gerçek rakip pozisyonunu bul (hamle geçmişine bak)
+  const myPlayerNum = winnerId;
+  const opponentNum = myPlayerNum === 1 ? 2 : 1;
+
+  let opponentLast = null;
+  for (let i = edges.length - 1; i >= 0; i--) {
+    if (edges[i].player === opponentNum) {
+      opponentLast = edges[i].to;
+      break;
+    }
+  }
+
+  // Eğer rakibin pozisyonu bilinmiyorsa, kontrol edemeyiz
+  if (!opponentLast) return;
+
+  const opponentCanMove = canMove(opponentLast);
   if (!opponentCanMove) {
     currentGameRef.update({
       winner: winnerId,
@@ -1555,11 +1569,11 @@ function checkGameOverOnline(lastMoveTo) {
   }
 }
 
-// 🔁 Güncelleme: Her online hamleden sonra bu kontrolu tetikle
+// 🔁 Geliştirilmiş kontrol: Her hamleden sonra tetiklenmeli
 const originalProcessMoveLocallyOnline = processMoveLocally;
 processMoveLocally = function(move) {
   originalProcessMoveLocallyOnline(move);
-  if (isOnlineGame && move.player === (playerRole === 'player1' ? 1 : 2)) {
+  if (isOnlineGame) {
     checkGameOverOnline(move.to);
   }
 };
