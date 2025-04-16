@@ -1064,11 +1064,14 @@ if (!gameActive || isLocked(point)) return;
 }
 
   
+
 function showOnlineResult(winner) {
   document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
-  const isWinner = winner === (playerRole === "player1" ? 1 : 2);
+
+  const myPlayerNum = (playerRole === "player1") ? 1 : 2;
+  const isWinner = winner === myPlayerNum;
 
   setTimeout(() => {
     if (isWinner) {
@@ -1082,6 +1085,7 @@ function showOnlineResult(winner) {
 
   cleanupOnlineGame();
 }
+
 
 
   function cleanupOnlineGame() {
