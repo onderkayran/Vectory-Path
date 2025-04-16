@@ -601,6 +601,9 @@ if (!gameActive || isLocked(point)) return;
     }
     
     processMoveLocally(move);
+      if (isOnlineGame) {
+        checkGameOverOnline(move.to);
+      }
   }
 
   function processMoveLocally(move) {
@@ -1019,9 +1022,13 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function processOnlineMoves(moves) {
+  // ✅ Gelen her hamleden sonra game over kontrolü yapılır
     Object.entries(moves).forEach(([moveId, move]) => {
       if (!isMoveProcessed(move)) {
         processMoveLocally(move);
+      if (isOnlineGame) {
+        checkGameOverOnline(move.to);
+      }
       }
     });
   }
@@ -1853,4 +1860,4 @@ window.endGame = function(winner) {
 };
 
 window.addEventListener("load", loadStats);
-</script>
+    </script>
