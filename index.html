@@ -978,7 +978,7 @@ if (!gameActive || isLocked(point)) return;
     processOnlineMoves(game.moves);
   }
 
-  if (game.winner && !hasShownResult) {
+  if (String(game.winner) && !hasShownResult) {
     showOnlineResult(game.winner);
       }
     });
