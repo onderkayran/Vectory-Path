@@ -1525,6 +1525,46 @@ function toggleDarkMode() {
 
 
 
+
+<script>
+// 🧠 Yeni: Hamleden sonra oyunun bitip bitmediğini kontrol et (online icin)
+function checkGameOverOnline(lastMoveTo) {
+  if (!isOnlineGame || !currentGameRef || !gameActive) return;
+
+  const isGoal = isEndPoint(lastMoveTo);
+  const opponentId = (playerRole === 'player1') ? 'player2' : 'player1';
+  const winnerId = (playerRole === 'player1') ? 1 : 2;
+
+  if (isGoal) {
+    currentGameRef.update({
+      winner: winnerId,
+      status: 'finished',
+      endedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    return;
+  }
+
+  // Rakibin hic hamlesi yoksa, yine oyun biter
+  const opponentCanMove = canMove(lastMoveTo);
+  if (!opponentCanMove) {
+    currentGameRef.update({
+      winner: winnerId,
+      status: 'finished',
+      endedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+}
+
+// 🔁 Güncelleme: Her online hamleden sonra bu kontrolu tetikle
+const originalProcessMoveLocallyOnline = processMoveLocally;
+processMoveLocally = function(move) {
+  originalProcessMoveLocallyOnline(move);
+  if (isOnlineGame && move.player === (playerRole === 'player1' ? 1 : 2)) {
+    checkGameOverOnline(move.to);
+  }
+};
+</script>
+
 </body>
 </html>
 <script>
