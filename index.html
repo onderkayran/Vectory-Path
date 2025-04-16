@@ -978,14 +978,13 @@ if (!gameActive || isLocked(point)) return;
     processOnlineMoves(game.moves);
   }
 
-  if (String(game.winner) && !hasShownResult) {
+  if ((game.winner === "1" || game.winner === "2") && !hasShownResult) {
     showOnlineResult(game.winner);
       }
     });
   }
 
   function startOnlineGame(gameData) {
-  hasShownResult = false;
   edges = [];
   lastPoint = null;
     isOnlineGame = true;
@@ -1044,6 +1043,7 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function endOnlineGame(winner) {
+  if (winner !== "1" && winner !== "2") return;
   if (hasShownResult) return;
   hasShownResult = true;
   currentGameRef.update({ 
@@ -1051,7 +1051,7 @@ if (!gameActive || isLocked(point)) return;
     status: 'finished',
     endedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
-    const isWinner = String(winner) === (playerRole === "player1" ? "1" : "2");
+    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       document.getElementById("winnerText").textContent = "Congratulations, You Won!";
       document.getElementById("winnerModal").style.display = 'flex';
@@ -1064,10 +1064,11 @@ if (!gameActive || isLocked(point)) return;
 }
 
   function showOnlineResult(winner) {
+  if (winner !== "1" && winner !== "2") return;
   document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
-    const isWinner = String(winner) === (playerRole === "player1" ? "1" : "2");
+    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       winnerText.textContent = "Congratulations, You Won!";
       winnerModal.style.display = 'flex';
@@ -1143,7 +1144,6 @@ if (!gameActive || isLocked(point)) return;
 
   // Oyun başlatma
   function startGame() {
-  hasShownResult = false;
     const mode = modeSelect.value;
     
     gridW = parseInt(document.getElementById('gridWidth').value);
