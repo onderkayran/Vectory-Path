@@ -1042,20 +1042,14 @@ if (!gameActive || isLocked(point)) return;
     );
   }
 
-  
-function endOnlineGame(winner) {
+  function endOnlineGame(winner) {
   if (hasShownResult) return;
-
+  hasShownResult = true;
   currentGameRef.update({ 
     winner: winner,
     status: 'finished',
     endedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
-    showOnlineResult(winner);
-  });
-}
-
-).then(() => {
     const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       document.getElementById("winnerText").textContent = "Congratulations, You Won!";
@@ -1068,32 +1062,15 @@ function endOnlineGame(winner) {
   });
 }
 
-  
-function showOnlineResult(winner) {
+  function showOnlineResult(winner) {
+  document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
-
-  const myPlayerNum = (playerRole === "player1") ? 1 : 2;
-  const isWinner = winner === myPlayerNum;
-
-  // Reset modals
-  winnerModal.style.display = 'none';
-  loserModal.style.display = 'none';
-
-  setTimeout(() => {
+    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       winnerText.textContent = "Congratulations, You Won!";
       winnerModal.style.display = 'flex';
     } else {
-      loserText.textContent = "Unfortunately, You Lost!";
-      loserModal.style.display = 'flex';
-    }
-  }, 100);
-
-  cleanupOnlineGame();
-}
-
-else {
       loserText.textContent = "Unfortunately, You Lost!";
       loserModal.style.display = 'flex';
     }
