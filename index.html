@@ -596,6 +596,7 @@ if (!gameActive || isLocked(point)) return;
 
     if (isOnlineGame) {
       sendOnlineMove(move);
+    checkGameOverOnline(point); // mobilde garanti bitiş kontrolü
     } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
       setTimeout(robotMove, 500);
     }
@@ -1860,4 +1861,4 @@ window.endGame = function(winner) {
 };
 
 window.addEventListener("load", loadStats);
-    </script>
+</script>
