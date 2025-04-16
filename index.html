@@ -1063,6 +1063,7 @@ if (!gameActive || isLocked(point)) return;
 }
 
   function showOnlineResult(winner) {
+  if (!winner || (winner !== 1 && winner !== 2)) return;
   document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
@@ -1385,7 +1386,8 @@ processMoveLocally = function(move) {
 
 const originalStartOnlineGame = startOnlineGame;
 startOnlineGame = function(gameData) {
-  originalStartOnlineGame(gameData);
+  hasShownResult = false;
+originalStartOnlineGame(gameData);
   const isMyTurn = (playerRole === 'player1' && gameData.currentPlayer === 'player1') ||
                      (playerRole === 'player2' && gameData.currentPlayer === 'player2');
   if (isMyTurn) {
