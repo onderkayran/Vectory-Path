@@ -1065,6 +1065,7 @@ if (!gameActive || isLocked(point)) return;
 
   
 
+
 function showOnlineResult(winner) {
   document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
@@ -1072,6 +1073,10 @@ function showOnlineResult(winner) {
 
   const myPlayerNum = (playerRole === "player1") ? 1 : 2;
   const isWinner = winner === myPlayerNum;
+
+  // Reset both modals first
+  winnerModal.style.display = 'none';
+  loserModal.style.display = 'none';
 
   setTimeout(() => {
     if (isWinner) {
@@ -1081,10 +1086,11 @@ function showOnlineResult(winner) {
       loserText.textContent = "Unfortunately, You Lost!";
       loserModal.style.display = 'flex';
     }
-  }, 100); // Mobile reflow fix
+  }, 100);
 
   cleanupOnlineGame();
 }
+
 
 
 
