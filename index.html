@@ -985,7 +985,6 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function startOnlineGame(gameData) {
-  hasShownResult = false;
   edges = [];
   lastPoint = null;
     isOnlineGame = true;
@@ -1044,8 +1043,9 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function endOnlineGame(winner) {
-  if (hasShownResult) return;
+ if (hasShownResult) return;
   hasShownResult = true;
+  
   currentGameRef.update({ 
     winner: winner,
     status: 'finished',
@@ -1057,46 +1057,61 @@ if (!gameActive || isLocked(point)) return;
       document.getElementById("winnerModal").style.display = 'flex';
     } else {
       document.getElementById("loserText").textContent = "Unfortunately, You Lost!";
-      document.getElementById("loserModal").style.display = 'flex';
     }
     cleanupOnlineGame();
   });
 }
 
   function showOnlineResult(winner) {
-  document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
-    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
-    if (isWinner) {
-      winnerText.textContent = "Congratulations, You Won!";
-      winnerModal.style.display = 'flex';
-    } else {
-      loserText.textContent = "Unfortunately, You Lost!";
-      loserModal.style.display = 'flex';
+  
+  const isWinner = winner === (playerRole === "player1" ? 1 : 2);
+  if (isWinner) {
+    winnerText.textContent = "Congratulations, You Won!";
+    winnerModal.style.display = 'flex';
+  } else {
+    loserText.textContent = "Unfortunately, You Lost!";
+    loserModal.style.display = 'flex';
     }
+    const closeModal = () => {
+    winnerModal.style.display = 'none';
+    loserModal.style.display = 'none';
     cleanupOnlineGame();
-  }
+ };
+  
+  playAgainBtn.onclick = closeModal;
+  tryAgainBtn.onclick = closeModal;
+}
 
   function cleanupOnlineGame() {
     if (currentGameRef) {
-      currentGameRef.off();
-      currentGameRef = null;
+    currentGameRef.off();
+    currentGameRef = null;
     }
-    if (matchmakingRef) {
-      matchmakingRef.off();
-      matchmakingRef.remove();
-      matchmakingRef = null;
+   if (matchmakingRef) {
+    matchmakingRef.off();
+    matchmakingRef.remove();
+    matchmakingRef = null;
     }
-    if (matchTimeout) {
-      clearTimeout(matchTimeout);
+   if (matchTimeout) {
+    clearTimeout(matchTimeout);
+    matchTimeout = null;
     }
     isOnlineGame = false;
-    playerRole = null;
-    updateOnlineStatus('', '');
-    findMatchBtn.disabled = false;
-    matchStatus.style.display = 'none';
-    matchProgress.style.display = 'block';
+  playerRole = null;
+  gameActive = false;
+  edges = [];
+  lastPoint = null;
+  obstacles = [];
+  hasShownResult = false; // Bunu ekleyin
+  updateOnlineStatus('', '');
+  findMatchBtn.disabled = false;
+  matchStatus.style.display = 'none';
+  matchProgress.style.display = 'block';
+  document.getElementById('leaveGameBtn').style.display = 'none';
+  clearInterval(moveTimer);
+  document.getElementById("turnTimer").style.display = 'none';
   }
 
   function updateOnlineStatus(text, role) {
@@ -1143,7 +1158,6 @@ if (!gameActive || isLocked(point)) return;
 
   // Oyun başlatma
   function startGame() {
-  hasShownResult = false;
     const mode = modeSelect.value;
     
     gridW = parseInt(document.getElementById('gridWidth').value);
