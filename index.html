@@ -1057,6 +1057,7 @@ if (!gameActive || isLocked(point)) return;
       document.getElementById("winnerModal").style.display = 'flex';
     } else {
       document.getElementById("loserText").textContent = "Unfortunately, You Lost!";
+      document.getElementById("loserModal").style.display = 'flex';
     }
     cleanupOnlineGame();
   });
