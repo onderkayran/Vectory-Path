@@ -1051,7 +1051,7 @@ if (!gameActive || isLocked(point)) return;
     status: 'finished',
     endedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
-    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
+    const isWinner = String(winner) === (playerRole === "player1" ? "1" : "2");
     if (isWinner) {
       document.getElementById("winnerText").textContent = "Congratulations, You Won!";
       document.getElementById("winnerModal").style.display = 'flex';
@@ -1067,7 +1067,7 @@ if (!gameActive || isLocked(point)) return;
   document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
-    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
+    const isWinner = String(winner) === (playerRole === "player1" ? "1" : "2");
     if (isWinner) {
       winnerText.textContent = "Congratulations, You Won!";
       winnerModal.style.display = 'flex';
