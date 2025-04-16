@@ -978,7 +978,7 @@ if (!gameActive || isLocked(point)) return;
     processOnlineMoves(game.moves);
   }
 
-  if ((game.winner === "1" || game.winner === "2") && !hasShownResult) {
+  if (game.winner && !hasShownResult) {
     showOnlineResult(game.winner);
       }
     });
@@ -1043,7 +1043,6 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function endOnlineGame(winner) {
-  if (winner !== "1" && winner !== "2") return;
   if (hasShownResult) return;
   hasShownResult = true;
   currentGameRef.update({ 
@@ -1064,7 +1063,6 @@ if (!gameActive || isLocked(point)) return;
 }
 
   function showOnlineResult(winner) {
-  if (winner !== "1" && winner !== "2") return;
   document.body.style.overflow = 'hidden';
   if (hasShownResult) return;
   hasShownResult = true;
@@ -1133,7 +1131,9 @@ if (!gameActive || isLocked(point)) return;
       if (snap.val() === false) {
         // Bağlantı kesildi
         if (isOnlineGame && gameActive) {
-          endOnlineGame(playerRole === 'player1' ? 2 : 1);
+          if (game && game.isGameOver) {
+    endOnlineGame(playerRole === 'player1' ? 2 : 1);
+}
         }
         if (matchmakingRef) {
           matchmakingRef.remove();
@@ -1360,7 +1360,9 @@ function startMoveTimer() {
     if (moveTimeLeft <= 0) {
       clearInterval(moveTimer);
       if (isOnlineGame && gameActive) {
-        endOnlineGame(playerRole === 'player1' ? 2 : 1);
+        if (game && game.isGameOver) {
+    endOnlineGame(playerRole === 'player1' ? 2 : 1);
+}
       }
     }
   }, 1000);
