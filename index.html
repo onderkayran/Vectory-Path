@@ -333,6 +333,13 @@
 <button class="btn btn-primary" id="nextStep">Next</button>
 </div>
 <button class="btn btn-outline-secondary mt-2 w-100" id="skipTutorial">Skip Tutorial</button>
+<div class="form-check mt-3">
+  <input class="form-check-input" type="checkbox" value="" id="dontShowTutorialAgain">
+  <label class="form-check-label" for="dontShowTutorialAgain">
+    Don't show this tutorial again
+  </label>
+</div>
+
 </div>
 </div>
 <div class="modal-overlay" id="winnerModal" style="display:none;">
@@ -1256,6 +1263,11 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 
   // Öğretici fonksiyonları
   function initTutorial() {
+  if (localStorage.getItem("vectoryDontShowTutorial") === "true") {
+    document.getElementById("tutorialModal").style.display = "none";
+    return;
+  }
+
     const tutorialModal = document.getElementById('tutorialModal');
     const closeTutorial = document.getElementById('closeTutorial');
     const prevBtn = document.getElementById('prevStep');
@@ -1268,6 +1280,10 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 
     closeTutorial.addEventListener('click', () => {
       tutorialModal.style.display = 'none';
+    
+    if (document.getElementById('dontShowTutorialAgain').checked) {
+      localStorage.setItem("vectoryDontShowTutorial", "true");
+    }
     });
 
     nextBtn.addEventListener('click', () => {
@@ -1294,6 +1310,10 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 
     skipBtn.addEventListener('click', () => {
       tutorialModal.style.display = 'none';
+    
+    if (document.getElementById('dontShowTutorialAgain').checked) {
+      localStorage.setItem("vectoryDontShowTutorial", "true");
+    }
     });
   }
 
