@@ -1439,8 +1439,10 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 
   const originalEndGame = window.endGame;
   window.endGame = function(winner) {
+  if (isOnlineGame) {
     updateStats(winner);
-    if (originalEndGame) originalEndGame(winner);
+  }
+  if (originalEndGame) originalEndGame(winner);
   };
 
   window.addEventListener("load", loadStats);
