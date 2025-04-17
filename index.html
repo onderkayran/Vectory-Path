@@ -523,7 +523,7 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
     }
     return false;
   }
-// Grid çiz
+  // Grid çiz
   function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const padding = canvas.width * 0.1;
@@ -636,13 +636,13 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 
   // Hamle yap
   function makeMove(point) {
-  if (!lastPoint) {
-    const start = { x: 0, y: gridH - 1 };
-    if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
-  } else {
-    if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
-  }
-if (!gameActive || isLocked(point)) return;
+    if (!lastPoint) {
+      const start = { x: 0, y: gridH - 1 };
+      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
+    } else {
+      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
+    }
+    if (!gameActive || isLocked(point)) return;
 
     const move = {
       from: lastPoint || { x: 0, y: gridH - 1 },
@@ -673,8 +673,8 @@ if (!gameActive || isLocked(point)) return;
     if (isEndPoint(move.to)) {
       endGame(move.player);
     } else if (!canMove(lastPoint)) {
-  endGame(move.player);
-}
+      endGame(move.player);
+    }
   }
 
   function endGame(winner) {
@@ -691,13 +691,12 @@ if (!gameActive || isLocked(point)) return;
             loserText.textContent = "Unfortunately, You Lost!";
             loserModal.style.display = 'flex';
         }
-    } else if (winner === 1) {
-        winnerText.textContent = "Congratulations, You Won!";
-        winnerModal.style.display = 'flex';
-        winnerModal.style.display = 'flex';
+      } else if (winner === 1) {
+          winnerText.textContent = "Congratulations, You Won!";
+          winnerModal.style.display = 'flex';
       } else {
-        loserText.textContent = modeSelect.value === 'robot' ? "Unfortunately, You Lost!" : "Congratulations, You Won!";
-        loserModal.style.display = 'flex';
+          loserText.textContent = modeSelect.value === 'robot' ? "Unfortunately, You Lost!" : "Congratulations, You Won!";
+          loserModal.style.display = 'flex';
       }
     }
   }
@@ -869,9 +868,6 @@ if (!gameActive || isLocked(point)) return;
 
   // Tıklama işleyici
   canvas.addEventListener("click", function(e) {
-
-
-
     if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
     const rect = canvas.getBoundingClientRect();
@@ -979,7 +975,7 @@ if (!gameActive || isLocked(point)) return;
             player1: otherPlayer.playerId,
             player2: myPlayerId,
             status: 'waiting',
-            config: otherPlayer.config, // İlk oyuncunun ayarları
+            config: otherPlayer.config,
             currentPlayer: 'player1',
             createdAt: firebase.database.ServerValue.TIMESTAMP
           });
@@ -1019,42 +1015,37 @@ if (!gameActive || isLocked(point)) return;
     currentGameRef.on('value', (snapshot) => {
       const game = snapshot.val();
       if (!game) return;
-  // BURAYA EK: obstacles henüz hazır değilse bekle
-  if (game.status === 'playing' && (!game.obstacles || Object.keys(game.obstacles).length === 0)) {
-    return; // obstacles henüz hazır değil
-  }
+      if (game.status === 'playing' && (!game.obstacles || Object.keys(game.obstacles).length === 0)) {
+        return;
+      }
 
-  startOnlineGame(game);
+      startOnlineGame(game);
 
-  if (game.moves) {
-    processOnlineMoves(game.moves);
-  }
+      if (game.moves) {
+        processOnlineMoves(game.moves);
+      }
 
-  if (game.winner && !hasShownResult) {
-    showOnlineResult(game.winner);
+      if (game.winner && !hasShownResult) {
+        showOnlineResult(game.winner);
       }
     });
   }
 
   function startOnlineGame(gameData) {
-  edges = [];
-  lastPoint = null;
+    edges = [];
+    lastPoint = null;
     isOnlineGame = true;
     gameActive = true;
     
-    // Grid boyutlarını ve zorluğu ayarla
     gridW = gameData.config.gridWidth;
     gridH = gameData.config.gridHeight;
     difficultySelect.value = gameData.config.difficulty;
     
-    // UI güncellemeleri
     document.getElementById('gridWidth').value = gridW;
     document.getElementById('gridHeight').value = gridH;
     
-    // Engel ve kilitli noktaları senkronize et
     obstacles = gameData.obstacles || [];
     
-    // Kimin sırası olduğunu belirle
     currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
     
     resizeCanvas();
@@ -1067,7 +1058,6 @@ if (!gameActive || isLocked(point)) return;
       timestamp: firebase.database.ServerValue.TIMESTAMP
     });
     
-    // Sırayı değiştir
     const nextPlayer = playerRole === 'player1' ? 'player2' : 'player1';
     currentGameRef.update({
       currentPlayer: nextPlayer
@@ -1091,28 +1081,28 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function endOnlineGame(winner) {
-  if (hasShownResult) return;
-  hasShownResult = true;
-  currentGameRef.update({ 
-    winner: winner,
-    status: 'finished',
-    endedAt: firebase.database.ServerValue.TIMESTAMP
-  }).then(() => {
-    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
-    if (isWinner) {
-      document.getElementById("winnerText").textContent = "Congratulations, You Won!";
-      document.getElementById("winnerModal").style.display = 'flex';
-    } else {
-      document.getElementById("loserText").textContent = "Unfortunately, You Lost!";
-      document.getElementById("loserModal").style.display = 'flex';
-    }
-    cleanupOnlineGame();
-  });
-}
+    if (hasShownResult) return;
+    hasShownResult = true;
+    currentGameRef.update({ 
+      winner: winner,
+      status: 'finished',
+      endedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      const isWinner = winner === (playerRole === "player1" ? 1 : 2);
+      if (isWinner) {
+        document.getElementById("winnerText").textContent = "Congratulations, You Won!";
+        document.getElementById("winnerModal").style.display = 'flex';
+      } else {
+        document.getElementById("loserText").textContent = "Unfortunately, You Lost!";
+        document.getElementById("loserModal").style.display = 'flex';
+      }
+      cleanupOnlineGame();
+    });
+  }
 
   function showOnlineResult(winner) {
-  if (hasShownResult) return;
-  hasShownResult = true;
+    if (hasShownResult) return;
+    hasShownResult = true;
     const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     if (isWinner) {
       winnerText.textContent = "Congratulations, You Won!";
@@ -1176,7 +1166,6 @@ if (!gameActive || isLocked(point)) return;
     const connectedRef = database.ref(".info/connected");
     connectedRef.on("value", (snap) => {
       if (snap.val() === false) {
-        // Bağlantı kesildi
         if (isOnlineGame && gameActive) {
           endOnlineGame(playerRole === 'player1' ? 2 : 1);
         }
@@ -1201,7 +1190,7 @@ if (!gameActive || isLocked(point)) return;
     
     if (mode !== 'online') {
       generateObstacles();
-      currentPlayer = mode === 'robot' ? 2 : 1; // Robot modunda robot başlasın
+      currentPlayer = mode === 'robot' ? 2 : 1;
       if (mode === 'robot' && currentPlayer === 2) {
         setTimeout(robotMove, 500);
       }
@@ -1220,12 +1209,11 @@ if (!gameActive || isLocked(point)) return;
       document.getElementById('findMatchBtn').disabled = false;
       document.getElementById('matchStatus').style.display = 'none';
     
-  // 🔧 Robot oyunundan kalan sahneyi temizle
-  edges = [];
-  lastPoint = null;
-  obstacles = [];
-  drawGrid();
-} else {
+      edges = [];
+      lastPoint = null;
+      obstacles = [];
+      drawGrid();
+    } else {
       document.getElementById('onlinePanel').style.display = 'none';
       document.getElementById('firstMoveHelp').style.display = 'block';
       if (currentGameRef) {
@@ -1261,7 +1249,6 @@ if (!gameActive || isLocked(point)) return;
     const steps = document.querySelectorAll('.tutorial-step');
     let currentStep = 1;
 
-    // Öğretici canvaslarını çiz
     drawTutorialCanvases();
 
     closeTutorial.addEventListener('click', () => {
@@ -1390,470 +1377,309 @@ if (!gameActive || isLocked(point)) return;
   tryAgainBtn.addEventListener('click', startGame);
   helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
   closeModal.addEventListener('click', () => helpModal.style.display = 'none');
-</script>
-<script>
-let moveTimer = null;
-let moveTimeLeft = 20;
 
-function startMoveTimer() {
-  clearInterval(moveTimer);
-  moveTimeLeft = 20;
-  document.getElementById("turnTimer").style.display = 'block';
-  document.getElementById("timeLeft").textContent = moveTimeLeft;
+  // Touch-event düzeltme
+  canvas.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const mx = touch.clientX - rect.left;
+    const my = touch.clientY - rect.top;
 
-  moveTimer = setInterval(() => {
-    moveTimeLeft--;
-    document.getElementById("timeLeft").textContent = moveTimeLeft;
-    if (moveTimeLeft <= 0) {
-      clearInterval(moveTimer);
-      if (isOnlineGame && gameActive) {
-        endOnlineGame(playerRole === 'player1' ? 2 : 1);
+    let minDist = Infinity;
+    let closestPoint = null;
+
+    for (let y = 0; y < gridH; y++) {
+      for (let x = 0; x < gridW; x++) {
+        if (isObstacle({x, y})) continue;
+        const canvasCoords = toCanvasCoords({x, y});
+        const dist = Math.sqrt((mx - canvasCoords.x) ** 2 + (my - canvasCoords.y) ** 2);
+        if (dist < minDist && dist < 20) {
+          minDist = dist;
+          closestPoint = {x, y};
+        }
       }
     }
-  }, 1000);
-}
+    if (closestPoint) {
+      makeMove(closestPoint);
+    }
+  }, { passive: false });
 
-const originalProcessMoveLocally = processMoveLocally;
-processMoveLocally = function(move) {
-  originalProcessMoveLocally(move);
-  const opponentPlayer = playerRole === 'player1' ? 2 : 1;
-  if (isOnlineGame) {
-    const isMyTurnNow = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
-    if (isMyTurnNow) {
+  function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
+  }
+
+  function toggleStatsPopup() {
+    const popup = document.getElementById("statsPopup");
+    popup.style.display = popup.style.display === "none" ? "block" : "none";
+  }
+
+  function loadStats() {
+    const wins = parseInt(localStorage.getItem("vectoryWins") || 0);
+    const losses = parseInt(localStorage.getItem("vectoryLosses") || 0);
+    const games = wins + losses;
+    const winRate = games > 0 ? ((wins / games) * 100).toFixed(1) + "%" : "0%";
+
+    document.getElementById("wins").textContent = wins;
+    document.getElementById("losses").textContent = losses;
+    document.getElementById("gamesPlayed").textContent = games;
+    document.getElementById("winRate").textContent = winRate;
+  }
+
+  function updateStats(winner) {
+    if (winner === 2) {
+      const wins = parseInt(localStorage.getItem("vectoryWins") || 0) + 1;
+      localStorage.setItem("vectoryWins", wins);
+    } else if (winner === 1) {
+      const losses = parseInt(localStorage.getItem("vectoryLosses") || 0) + 1;
+      localStorage.setItem("vectoryLosses", losses);
+    }
+    loadStats();
+  }
+
+  const originalEndGame = window.endGame;
+  window.endGame = function(winner) {
+    updateStats(winner);
+    if (originalEndGame) originalEndGame(winner);
+  };
+
+  window.addEventListener("load", loadStats);
+
+  let moveTimer = null;
+  let moveTimeLeft = 20;
+
+  function startMoveTimer() {
+    clearInterval(moveTimer);
+    moveTimeLeft = 20;
+    document.getElementById("turnTimer").style.display = 'block';
+    document.getElementById("timeLeft").textContent = moveTimeLeft;
+
+    moveTimer = setInterval(() => {
+      moveTimeLeft--;
+      document.getElementById("timeLeft").textContent = moveTimeLeft;
+      if (moveTimeLeft <= 0) {
+        clearInterval(moveTimer);
+        if (isOnlineGame && gameActive) {
+          endOnlineGame(playerRole === 'player1' ? 2 : 1);
+        }
+      }
+    }, 1000);
+  }
+
+  const originalProcessMoveLocally = processMoveLocally;
+  processMoveLocally = function(move) {
+    originalProcessMoveLocally(move);
+    const opponentPlayer = playerRole === 'player1' ? 2 : 1;
+    if (isOnlineGame) {
+      const isMyTurnNow = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
+      if (isMyTurnNow) {
+        startMoveTimer();
+      } else {
+        clearInterval(moveTimer);
+        document.getElementById("turnTimer").style.display = 'none';
+      }
+    }
+  };
+
+  const originalStartOnlineGame = startOnlineGame;
+  startOnlineGame = function(gameData) {
+    originalStartOnlineGame(gameData);
+    const isMyTurn = (playerRole === 'player1' && gameData.currentPlayer === 'player1') ||
+                       (playerRole === 'player2' && gameData.currentPlayer === 'player2');
+    if (isMyTurn) {
       startMoveTimer();
     } else {
       clearInterval(moveTimer);
       document.getElementById("turnTimer").style.display = 'none';
     }
-  }
-};
+  };
 
-const originalStartOnlineGame = startOnlineGame;
-startOnlineGame = function(gameData) {
-  originalStartOnlineGame(gameData);
-  const isMyTurn = (playerRole === 'player1' && gameData.currentPlayer === 'player1') ||
-                     (playerRole === 'player2' && gameData.currentPlayer === 'player2');
-  if (isMyTurn) {
-    startMoveTimer();
-  } else {
+  const originalEndOnlineGame = endOnlineGame;
+  endOnlineGame = function(winner) {
     clearInterval(moveTimer);
     document.getElementById("turnTimer").style.display = 'none';
-  }
-};
+    originalEndOnlineGame(winner);
+  };
 
-const originalEndOnlineGame = endOnlineGame;
-endOnlineGame = function(winner) {
-  clearInterval(moveTimer);
-  document.getElementById("turnTimer").style.display = 'none';
-  originalEndOnlineGame(winner);
-};
-
-function leaveOnlineGame() {
-  if (!isOnlineGame || !currentGameRef) return;
-  const winner = playerRole === 'player1' ? 2 : 1;
-  currentGameRef.update({
-    winner: winner,
-    status: 'finished',
-    endedAt: firebase.database.ServerValue.TIMESTAMP
-  }).then(() => {
-    alert("You left the game. The opponent wins.");
-    cleanupOnlineGame();
-  });
-}
-
-document.getElementById('leaveGameBtn').addEventListener('click', leaveOnlineGame);
-
-const originalJoinOnlineGame = joinOnlineGame;
-joinOnlineGame = function(gameId, role) {
-  originalJoinOnlineGame(gameId, role);
-  document.getElementById('leaveGameBtn').style.display = 'block';
-};
-
-const originalCleanupOnlineGame = cleanupOnlineGame;
-cleanupOnlineGame = function() {
-  clearInterval(moveTimer);
-  document.getElementById("turnTimer").style.display = 'none';
-  document.getElementById('leaveGameBtn').style.display = 'none';
-  originalCleanupOnlineGame();
-};
-</script>
-<script>
-function updateWinnerBackground() {
-  const winnerText = document.getElementById("winnerText");
-  const loserText = document.getElementById("loserText");
-
-  if (winnerText) {
-    const text = winnerText.textContent.toLowerCase();
-    if (text.includes("congratulations")) {
-      winnerText.style.backgroundColor = "#34A853";
-      winnerText.style.color = "white";
-    } else if (text.includes("unfortunately")) {
-      winnerText.style.backgroundColor = "#EA4335";
-      winnerText.style.color = "white";
-    }
+  function leaveOnlineGame() {
+    if (!isOnlineGame || !currentGameRef) return;
+    const winner = playerRole === 'player1' ? 2 : 1;
+    currentGameRef.update({
+      winner: winner,
+      status: 'finished',
+      endedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      alert("You left the game. The opponent wins.");
+      cleanupOnlineGame();
+    });
   }
 
-  if (loserText) {
-    const text = loserText.textContent.toLowerCase();
-    if (text.includes("unfortunately")) {
-      loserText.style.backgroundColor = "#EA4335";
-      loserText.style.color = "white";
-    } else if (text.includes("congratulations")) {
-      loserText.style.backgroundColor = "#34A853";
-      loserText.style.color = "white";
-    }
+  document.getElementById('leaveGameBtn').addEventListener('click', leaveOnlineGame);
+
+  const originalJoinOnlineGame = joinOnlineGame;
+  joinOnlineGame = function(gameId, role) {
+    originalJoinOnlineGame(gameId, role);
+    document.getElementById('leaveGameBtn').style.display = 'block';
+  };
+
+  const originalCleanupOnlineGame = cleanupOnlineGame;
+  cleanupOnlineGame = function() {
+    clearInterval(moveTimer);
+    document.getElementById("turnTimer").style.display = 'none';
+    document.getElementById('leaveGameBtn').style.display = 'none';
+    originalCleanupOnlineGame();
+  };
+
+  function isVictory(p) {
+    return p.x === gridW - 1 && p.y === 0;
   }
-}
 
-// Yazıların görünmesi biraz zaman alabilir, bu yüzden gecikmeli çalıştır
-setTimeout(updateWinnerBackground, 100);
-</script><script>
-function showResultModal(message) {
-    const modal = document.getElementById("resultModal");
-    const modalMessage = document.getElementById("resultMessage");
-    modalMessage.textContent = message;
-
-    // Set background color based on result
-    if (message.toLowerCase().includes("won") || message.toLowerCase().includes("congratulations")) {
-        modal.style.backgroundColor = "#4CAF50"; // green
-    } else if (message.toLowerCase().includes("lost") || message.toLowerCase().includes("unfortunately")) {
-        modal.style.backgroundColor = "#f44336"; // red
-    } else {
-        modal.style.backgroundColor = "#ffffff"; // default white
-    }
-
-    modal.style.display = "block";
-}
-</script>
-
-<script>
-// Touch-event düzeltme
-canvas.addEventListener("touchstart", function(e) {
-  e.preventDefault(); // Varsayılan davranışı engelle
-  const rect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  const mx = touch.clientX - rect.left;
-  const my = touch.clientY - rect.top;
-
-  let minDist = Infinity;
-  let closestPoint = null;
-
-  for (let y = 0; y < gridH; y++) {
-    for (let x = 0; x < gridW; x++) {
-      if (isObstacle({x, y})) continue;
-      const canvasCoords = toCanvasCoords({x, y});
-      const dist = Math.sqrt((mx - canvasCoords.x) ** 2 + (my - canvasCoords.y) ** 2);
-      if (dist < minDist && dist < 20) {
-        minDist = dist;
-        closestPoint = {x, y};
-      }
-    }
-  }
-  if (closestPoint) {
-    makeMove(closestPoint);
-  }
-}, { passive: false });
-</script>
-
-
-<script>
-function toggleDarkMode() {
-  document.body.classList.toggle("dark-mode");
-}
-</script>
-<style>
-.dark-mode {
-  background-color: #121212 !important;
-  color: #ffffff !important;
-}
-.dark-mode .game-container {
-  background-color: #1e1e1e !important;
-  color: white !important;
-}
-.dark-mode .btn {
-  border: 1px solid #ccc !important;
-}
-.dark-mode h1 {
-  background: linear-gradient(to right, #000428, #004e92) !important;
-  color: white !important;
-}
-</style>
-
-
-
-
-</body>
-</html>
-<script>
-function isVictory(p) {
-  return p.x === gridW - 1 && p.y === 0;
-}
-
-function getAvailableMoves(from) {
-  const moves = [];
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      if (dx === 0 && dy === 0) continue;
-      const nx = from.x + dx;
-      const ny = from.y + dy;
-      if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
-        const next = { x: nx, y: ny };
-        if (!edgeExists(from, next) && !isObstacle(next)) {
-          moves.push(next);
+  function getAvailableMoves(from) {
+    const moves = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = from.x + dx;
+        const ny = from.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+          const next = { x: nx, y: ny };
+          if (!edgeExists(from, next) && !isObstacle(next)) {
+            moves.push(next);
+          }
         }
       }
     }
-  }
-  return moves;
-}
-
-function getMediumMove(from) {
-  const options = getAvailableMoves(from);
-  const goal = { x: gridW - 1, y: 0 };
-
-  return options.reduce((best, move) => {
-    const dist = Math.hypot(goal.x - move.x, goal.y - move.y);
-    const score = dist + Math.random() * 2;
-    return !best || score < best.score ? { move, score } : best;
-  }, null)?.move || null;
-}
-
-function getHardMove(from) {
-  const options = getAvailableMoves(from);
-  const goal = { x: gridW - 1, y: 0 };
-
-  let bestMove = null;
-  let bestScore = -Infinity;
-
-  for (const move of options) {
-    edges.push({ from, to: move, player: 2 });
-    const playerOptions = getAvailableMoves(move);
-    edges.pop();
-
-    const dist = Math.hypot(goal.x - move.x, goal.y - move.y);
-    let score = -dist;
-    score -= playerOptions.length * 3;
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMove = move;
-    }
-  }
-  return bestMove || options[0];
-}
-
-function getExpertMove(from) {
-  const options = getAvailableMoves(from);
-  if (options.length === 0) return null;
-
-  let bestMove = null;
-  let bestScore = -Infinity;
-  const goal = { x: gridW - 1, y: 0 };
-
-  for (const move of options) {
-    edges.push({ from, to: move, player: 2 });
-    const playerMoves = getAvailableMoves(move);
-
-    let totalScore = 0;
-    let loseImmediately = false;
-
-    if (playerMoves.length === 0) {
-      edges.pop();
-      return move;
-    }
-
-    for (const pMove of playerMoves) {
-      edges.push({ from: move, to: pMove, player: 1 });
-
-      if (isVictory(pMove)) {
-        loseImmediately = true;
-        edges.pop();
-        break;
-      }
-
-      const robotReplies = getAvailableMoves(pMove);
-
-      for (const reply of robotReplies) {
-        edges.push({ from: pMove, to: reply, player: 2 });
-        const playerOptions = getAvailableMoves(reply);
-
-        let score = 0;
-        if (playerOptions.length === 0) score += 1000;
-        if (isVictory(reply)) score += 500;
-        score -= Math.hypot(goal.x - reply.x, goal.y - reply.y) * 2;
-        score -= playerOptions.length * 10;
-
-        totalScore += score;
-        edges.pop();
-      }
-
-      edges.pop();
-    }
-
-    edges.pop();
-
-    if (loseImmediately) continue;
-
-    if (totalScore > bestScore) {
-      bestScore = totalScore;
-      bestMove = move;
-    }
+    return moves;
   }
 
-  return bestMove;
-}
-
-function getBestMove(from) {
-  const settings = {
-    easy: { mistakeRate: 0.5 },
-    medium: { mistakeRate: 0.3 },
-    hard: { mistakeRate: 0.04 },
-    expert: { mistakeRate: 0.0001 }
-  }[difficultySelect.value];
-
-  if (Math.random() < settings.mistakeRate) {
+  function getMediumMove(from) {
     const options = getAvailableMoves(from);
-    return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
+    const goal = { x: gridW - 1, y: 0 };
+
+    return options.reduce((best, move) => {
+      const dist = Math.hypot(goal.x - move.x, goal.y - move.y);
+      const score = dist + Math.random() * 2;
+      return !best || score < best.score ? { move, score } : best;
+    }, null)?.move || null;
   }
 
-  switch (difficultySelect.value) {
-    case 'expert': return getExpertMove(from);
-    case 'hard': return getHardMove(from);
-    case 'medium': return getMediumMove(from);
-    default:
+  function getHardMove(from) {
+    const options = getAvailableMoves(from);
+    const goal = { x: gridW - 1, y: 0 };
+
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    for (const move of options) {
+      edges.push({ from, to: move, player: 2 });
+      const playerOptions = getAvailableMoves(move);
+      edges.pop();
+
+      const dist = Math.hypot(goal.x - move.x, goal.y - move.y);
+      let score = -dist;
+      score -= playerOptions.length * 3;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+    return bestMove || options[0];
+  }
+
+  function getExpertMove(from) {
+    const options = getAvailableMoves(from);
+    if (options.length === 0) return null;
+
+    let bestMove = null;
+    let bestScore = -Infinity;
+    const goal = { x: gridW - 1, y: 0 };
+
+    for (const move of options) {
+      edges.push({ from, to: move, player: 2 });
+      const playerMoves = getAvailableMoves(move);
+
+      let totalScore = 0;
+      let loseImmediately = false;
+
+      if (playerMoves.length === 0) {
+        edges.pop();
+        return move;
+      }
+
+      for (const pMove of playerMoves) {
+        edges.push({ from: move, to: pMove, player: 1 });
+
+        if (isVictory(pMove)) {
+          loseImmediately = true;
+          edges.pop();
+          break;
+        }
+
+        const robotReplies = getAvailableMoves(pMove);
+
+        for (const reply of robotReplies) {
+          edges.push({ from: pMove, to: reply, player: 2 });
+          const playerOptions = getAvailableMoves(reply);
+
+          let score = 0;
+          if (playerOptions.length === 0) score += 1000;
+          if (isVictory(reply)) score += 500;
+          score -= Math.hypot(goal.x - reply.x, goal.y - reply.y) * 2;
+          score -= playerOptions.length * 10;
+
+          totalScore += score;
+          edges.pop();
+        }
+
+        edges.pop();
+      }
+
+      edges.pop();
+
+      if (loseImmediately) continue;
+
+      if (totalScore > bestScore) {
+        bestScore = totalScore;
+        bestMove = move;
+      }
+    }
+
+    return bestMove;
+  }
+
+  function getBestMove(from) {
+    const settings = {
+      easy: { mistakeRate: 0.5 },
+      medium: { mistakeRate: 0.3 },
+      hard: { mistakeRate: 0.04 },
+      expert: { mistakeRate: 0.0001 }
+    }[difficultySelect.value];
+
+    if (Math.random() < settings.mistakeRate) {
       const options = getAvailableMoves(from);
       return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
-  }
-}
-
-function robotMove() {
-  if (!gameActive || modeSelect.value !== "robot") return;
-  const move = getBestMove(lastPoint);
-  if (move) {
-    makeMove(move);
-  } else {
-    endGame(1);
-  }
-}
-</script>
-<script>
-function toggleStatsPopup() {
-  const popup = document.getElementById("statsPopup");
-  popup.style.display = popup.style.display === "none" ? "block" : "none";
-}
-
-function loadStats() {
-  const wins = parseInt(localStorage.getItem("vectoryWins") || 0);
-  const losses = parseInt(localStorage.getItem("vectoryLosses") || 0);
-  const games = wins + losses;
-  const winRate = games > 0 ? ((wins / games) * 100).toFixed(1) + "%" : "0%";
-
-  document.getElementById("wins").textContent = wins;
-  document.getElementById("losses").textContent = losses;
-  document.getElementById("gamesPlayed").textContent = games;
-  document.getElementById("winRate").textContent = winRate;
-}
-
-function updateStats(winner) {
-  if (winner === 2) {
-    const wins = parseInt(localStorage.getItem("vectoryWins") || 0) + 1;
-    localStorage.setItem("vectoryWins", wins);
-  } else if (winner === 1) {
-    const losses = parseInt(localStorage.getItem("vectoryLosses") || 0) + 1;
-    localStorage.setItem("vectoryLosses", losses);
-  }
-  loadStats();
-}
-
-const originalEndGame = window.endGame;
-window.endGame = function(winner) {
-  updateStats(winner);
-  if (originalEndGame) originalEndGame(winner);
-};
-
-window.addEventListener("load", loadStats);
-</script>
-<!-- 📊 Statistics Göster Butonu -->
-<!-- Popup Panel -->
-<div id="statsPopup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-shadow: 0 0 10px rgba(0,0,0,0.5); border-radius: 10px;">
-<h3>Statisticsler</h3>
-<p>Wins: <span id="wins">0</span></p>
-<p>Losses: <span id="losses">0</span></p>
-<p>Games Played: <span id="gamesPlayed">0</span></p>
-<p>Win Rate: <span id="winRate">0%</span></p>
-<button onclick="toggleStatsPopup()">Close</button>
-</div>
-<style>
-@media (max-width: 600px) {
-  #statsPopup {
-    width: 90%;
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 600px) {
-  .game-container {
-    padding: 10px;
-  }
-  
-    canvas {
-      border: 2px solid #e0e0e0;
-      background-color: #e6f7f5;
-      display: block;
-      margin: 0 auto 20px auto;
-      width: 100%;
-      max-width: 450px;
-      height: 450px;
     }
 
-  .d-flex.flex-wrap {
-    flex-direction: column;
-    align-items: center;
+    switch (difficultySelect.value) {
+      case 'expert': return getExpertMove(from);
+      case 'hard': return getHardMove(from);
+      case 'medium': return getMediumMove(from);
+      default:
+        const options = getAvailableMoves(from);
+        return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
+    }
   }
-  .d-flex.flex-wrap button,
-  .d-flex.flex-wrap select,
-  .d-flex.flex-wrap input {
-    width: 90% !important;
-    margin-bottom: 8px;
+
+  function robotMove() {
+    if (!gameActive || modeSelect.value !== "robot") return;
+    const move = getBestMove(lastPoint);
+    if (move) {
+      makeMove(move);
+    } else {
+      endGame(1);
+    }
   }
-}
-
-</style>
-<script>
-function toggleStatsPopup() {
-  const popup = document.getElementById("statsPopup");
-  popup.style.display = popup.style.display === "none" ? "block" : "none";
-}
-
-function loadStats() {
-  const wins = parseInt(localStorage.getItem("vectoryWins") || 0);
-  const losses = parseInt(localStorage.getItem("vectoryLosses") || 0);
-  const games = wins + losses;
-  const winRate = games > 0 ? ((wins / games) * 100).toFixed(1) + "%" : "0%";
-
-  document.getElementById("wins").textContent = wins;
-  document.getElementById("losses").textContent = losses;
-  document.getElementById("gamesPlayed").textContent = games;
-  document.getElementById("winRate").textContent = winRate;
-}
-
-function updateStats(winner) {
-  if (winner === 2) {
-    const wins = parseInt(localStorage.getItem("vectoryWins") || 0) + 1;
-    localStorage.setItem("vectoryWins", wins);
-  } else if (winner === 1) {
-    const losses = parseInt(localStorage.getItem("vectoryLosses") || 0) + 1;
-    localStorage.setItem("vectoryLosses", losses);
-  }
-  loadStats();
-}
-
-const originalEndGame = window.endGame;
-window.endGame = function(winner) {
-  updateStats(winner);
-  if (originalEndGame) originalEndGame(winner);
-};
-
-window.addEventListener("load", loadStats);
 </script>
+</body>
+</html>
