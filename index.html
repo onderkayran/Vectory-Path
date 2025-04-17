@@ -596,15 +596,11 @@ if (!gameActive || isLocked(point)) return;
 
     if (isOnlineGame) {
       sendOnlineMove(move);
-    checkGameOverOnline(point); // mobilde garanti bitiş kontrolü
     } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
       setTimeout(robotMove, 500);
     }
     
     processMoveLocally(move);
-      if (isOnlineGame) {
-        checkGameOverOnline(move.to);
-      }
   }
 
   function processMoveLocally(move) {
@@ -1023,13 +1019,9 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function processOnlineMoves(moves) {
-  // ✅ Gelen her hamleden sonra game over kontrolü yapılır
     Object.entries(moves).forEach(([moveId, move]) => {
       if (!isMoveProcessed(move)) {
         processMoveLocally(move);
-      if (isOnlineGame) {
-        checkGameOverOnline(move.to);
-      }
       }
     });
   }
@@ -1043,9 +1035,8 @@ if (!gameActive || isLocked(point)) return;
   }
 
   function endOnlineGame(winner) {
- if (hasShownResult) return;
+  if (hasShownResult) return;
   hasShownResult = true;
-  
   currentGameRef.update({ 
     winner: winner,
     status: 'finished',
@@ -1066,53 +1057,36 @@ if (!gameActive || isLocked(point)) return;
   function showOnlineResult(winner) {
   if (hasShownResult) return;
   hasShownResult = true;
-  
-  const isWinner = winner === (playerRole === "player1" ? 1 : 2);
-  if (isWinner) {
-    winnerText.textContent = "Congratulations, You Won!";
-    winnerModal.style.display = 'flex';
-  } else {
-    loserText.textContent = "Unfortunately, You Lost!";
-    loserModal.style.display = 'flex';
+    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
+    if (isWinner) {
+      winnerText.textContent = "Congratulations, You Won!";
+      winnerModal.style.display = 'flex';
+    } else {
+      loserText.textContent = "Unfortunately, You Lost!";
+      loserModal.style.display = 'flex';
     }
-    const closeModal = () => {
-    winnerModal.style.display = 'none';
-    loserModal.style.display = 'none';
     cleanupOnlineGame();
- };
-  
-  playAgainBtn.onclick = closeModal;
-  tryAgainBtn.onclick = closeModal;
-}
+  }
 
   function cleanupOnlineGame() {
     if (currentGameRef) {
-    currentGameRef.off();
-    currentGameRef = null;
+      currentGameRef.off();
+      currentGameRef = null;
     }
-   if (matchmakingRef) {
-    matchmakingRef.off();
-    matchmakingRef.remove();
-    matchmakingRef = null;
+    if (matchmakingRef) {
+      matchmakingRef.off();
+      matchmakingRef.remove();
+      matchmakingRef = null;
     }
-   if (matchTimeout) {
-    clearTimeout(matchTimeout);
-    matchTimeout = null;
+    if (matchTimeout) {
+      clearTimeout(matchTimeout);
     }
     isOnlineGame = false;
-  playerRole = null;
-  gameActive = false;
-  edges = [];
-  lastPoint = null;
-  obstacles = [];
-  hasShownResult = false; // Bunu ekleyin
-  updateOnlineStatus('', '');
-  findMatchBtn.disabled = false;
-  matchStatus.style.display = 'none';
-  matchProgress.style.display = 'block';
-  document.getElementById('leaveGameBtn').style.display = 'none';
-  clearInterval(moveTimer);
-  document.getElementById("turnTimer").style.display = 'none';
+    playerRole = null;
+    updateOnlineStatus('', '');
+    findMatchBtn.disabled = false;
+    matchStatus.style.display = 'none';
+    matchProgress.style.display = 'block';
   }
 
   function updateOnlineStatus(text, role) {
@@ -1159,6 +1133,8 @@ if (!gameActive || isLocked(point)) return;
 
   // Oyun başlatma
   function startGame() {
+    hasShownResult = false;
+
     const mode = modeSelect.value;
     
     gridW = parseInt(document.getElementById('gridWidth').value);
@@ -1497,7 +1473,6 @@ function showResultModal(message) {
 <script>
 // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
-  if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
   e.preventDefault(); // Varsayılan davranışı engelle
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
@@ -1550,64 +1525,6 @@ function toggleDarkMode() {
 
 
 
-
-
-<script>
-// 🧠 Güncellenmiş: Rakibin pozisyonunu analiz ederek online oyunu bitir
-function checkGameOverOnline(lastMoveTo) {
- if (!isOnlineGame || !currentGameRef || !gameActive) return false;
-
-  const isGoal = isEndPoint(lastMoveTo);
-  const isMyTurn = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
-  const winnerId = (playerRole === 'player1') ? 1 : 2;
-
-  if (isGoal) {
-    currentGameRef.update({
-      winner: winnerId,
-      status: 'finished',
-      endedAt: firebase.database.ServerValue.TIMESTAMP
-    });
-
-    // ✅ Ekranda sonucu göster
-    showOnlineResult(winnerId);
-    return;
-  }
-
-  const myPlayerNum = winnerId;
-  const opponentNum = myPlayerNum === 1 ? 2 : 1;
-
-  let opponentLast = null;
-  for (let i = edges.length - 1; i >= 0; i--) {
-    if (edges[i].player === opponentNum) {
-      opponentLast = edges[i].to;
-      break;
-    }
-  }
-
-  if (!opponentLast) opponentLast = { x: 0, y: gridH - 1 };
-
-  const opponentCanMove = canMove(opponentLast);
-  if (!opponentCanMove) {
-    currentGameRef.update({
-      winner: winnerId,
-      status: 'finished',
-      endedAt: firebase.database.ServerValue.TIMESTAMP
-    });
-
-    // ✅ Ekranda sonucu göster
-    showOnlineResult(winnerId);
-  }
-}
-
-// 🔁 Geliştirilmiş kontrol: Her hamleden sonra tetiklenmeli
-const originalProcessMoveLocallyOnline = processMoveLocally;
-processMoveLocally = function(move) {
-  originalProcessMoveLocallyOnline(move);
-  if (isOnlineGame) {
-    checkGameOverOnline(move.to);
-  }
-};
-</script>
 
 </body>
 </html>
