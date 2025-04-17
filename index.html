@@ -1587,66 +1587,76 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
     return bestMove || options[0];
   }
 
-  function getExpertMove(from) {
-    const options = getAvailableMoves(from);
-    if (options.length === 0) return null;
+function getExpertMove(from) {
+  const options = getAvailableMoves(from);
+  if (options.length === 0) return null;
 
-    let bestMove = null;
-    let bestScore = -Infinity;
-    const goal = { x: gridW - 1, y: 0 };
+  let bestMove = null;
+  let bestScore = -Infinity;
+  const goal = { x: gridW - 1, y: 0 };
 
-    for (const move of options) {
-      edges.push({ from, to: move, player: 2 });
-      const playerMoves = getAvailableMoves(move);
+  for (const move of options) {
+    edges.push({ from, to: move, player: 2 });
+    const playerMoves = getAvailableMoves(move);
 
-      let totalScore = 0;
-      let loseImmediately = false;
+    let totalScore = 0;
+    let loseImmediately = false;
 
-      if (playerMoves.length === 0) {
+    if (playerMoves.length === 0) {
+      edges.pop();
+      return move; // Robot burada oyuncuyu hamlesiz bırakarak kazanıyor
+    }
+
+    for (const pMove of playerMoves) {
+      edges.push({ from: move, to: pMove, player: 1 });
+
+      if (isVictory(pMove)) {
+        loseImmediately = true;
         edges.pop();
-        return move;
+        break;
       }
 
-      for (const pMove of playerMoves) {
-        edges.push({ from: move, to: pMove, player: 1 });
+      const robotReplies = getAvailableMoves(pMove);
 
-        if (isVictory(pMove)) {
-          loseImmediately = true;
-          edges.pop();
-          break;
-        }
+      for (const reply of robotReplies) {
+        edges.push({ from: pMove, to: reply, player: 2 });
+        const playerOptions = getAvailableMoves(reply);
 
-        const robotReplies = getAvailableMoves(pMove);
+        let score = 0;
+        if (playerOptions.length === 0) score += 1000;
+        if (isVictory(reply)) score += 500;
+        score -= Math.hypot(goal.x - reply.x, goal.y - reply.y) * 2;
+        score -= playerOptions.length * 10;
 
-        for (const reply of robotReplies) {
-          edges.push({ from: pMove, to: reply, player: 2 });
-          const playerOptions = getAvailableMoves(reply);
-
-          let score = 0;
-          if (playerOptions.length === 0) score += 1000;
-          if (isVictory(reply)) score += 500;
-          score -= Math.hypot(goal.x - reply.x, goal.y - reply.y) * 2;
-          score -= playerOptions.length * 10;
-
-          totalScore += score;
-          edges.pop();
-        }
-
+        totalScore += score;
         edges.pop();
       }
 
       edges.pop();
-
-      if (loseImmediately) continue;
-
-      if (totalScore > bestScore) {
-        bestScore = totalScore;
-        bestMove = move;
-      }
     }
 
-    return bestMove;
+    edges.pop();
+
+    // 🔁 Eğer tüm hamleler loseImmediately ise, yine de en azından birini seçmeye izin ver
+    if (loseImmediately) {
+      console.log("Hamle güvenli değil ama başka seçeneğimiz olmayabilir:", move);
+      if (!bestMove) {
+        bestMove = move;
+        bestScore = -9999;
+      }
+      continue;
+    }
+
+    if (totalScore > bestScore) {
+      bestScore = totalScore;
+      bestMove = move;
+    }
   }
+
+  console.log("Seçilen en iyi hamle (expert):", bestMove, "Puan:", bestScore);
+  return bestMove;
+}
+
 
   function getBestMove(from) {
     const settings = {
