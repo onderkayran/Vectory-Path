@@ -420,6 +420,30 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
   const matchStatusText = document.getElementById('matchStatusText');
   const matchProgress = document.getElementById('matchProgress');
 
+  // Ses efektleri
+  const moveSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2124/2124-preview.mp3');
+  const winSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+  const loseSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2014/2014-preview.mp3');
+
+  // Ses efektlerini oynatma fonksiyonları
+  function playMoveSound() {
+    moveSound.volume = 0.2;
+    moveSound.currentTime = 0;
+    moveSound.play();
+  }
+
+  function playWinSound() {
+    winSound.volume = 0.4;
+    winSound.currentTime = 0;
+    winSound.play();
+  }
+
+  function playLoseSound() {
+    loseSound.volume = 0.4;
+    loseSound.currentTime = 0;
+    loseSound.play();
+  }
+
   // Canvas boyutlandırma
   function resizeCanvas() {
     const container = document.querySelector('.game-container');
@@ -1477,10 +1501,15 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 
   const originalEndGame = window.endGame;
   window.endGame = function(winner) {
-  if (isOnlineGame) {
-    updateStats(winner);
-  }
-  if (originalEndGame) originalEndGame(winner);
+    if (isOnlineGame) {
+      updateStats(winner);
+    }
+    if (winner === 1) {
+      playWinSound();
+    } else {
+      playLoseSound();
+    }
+    if (originalEndGame) originalEndGame(winner);
   };
 
   window.addEventListener("load", loadStats);
@@ -1509,6 +1538,7 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
   const originalProcessMoveLocally = processMoveLocally;
   processMoveLocally = function(move) {
     originalProcessMoveLocally(move);
+    playMoveSound();
     const opponentPlayer = playerRole === 'player1' ? 2 : 1;
     if (isOnlineGame) {
       const isMyTurnNow = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
