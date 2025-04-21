@@ -223,6 +223,12 @@
     backdrop-filter: blur(6px);
   }
 
+  .opponent-stats {
+    font-size: 14px;
+    margin-top: 10px;
+    padding: 8px;
+  }
+
 </style>
 </head>
 <body>
@@ -231,21 +237,24 @@
 <h1 class="text-center fw-bold" style="font-family: 'Poppins', sans-serif; font-size: 2.5rem; color: white; margin-bottom: 20px; background: linear-gradient(to right, #4facfe, #00f2fe); padding: 10px 20px; border-radius: 12px;">
   Vectory Path
 </h1>
-<canvas id="gameCanvas"></canvas>
 
 <div class="alert alert-warning" id="onlineStatus">
 <strong>Online Game:</strong>
 <span id="gameStatusText">Connecting...</span>
 <span class="badge ms-2" id="playerRoleBadge"></span>
 </div>
+
+<div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
+  Your time: <span id="timeLeft">20</span> seconds
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
 <div class="alert alert-info mt-3" id="firstMoveHelp" style="font-size: 14px;">
 <strong>First Move Tip:</strong><br/>
     Click one of the points adjacent to the bottom-left corner (green dot) to start the game. 
 </div>
 <button class="btn btn-danger w-100 mb-2" id="leaveGameBtn" style="display:none;">Leave Game</button>
-<div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
-  Your time: <span id="timeLeft">20</span> seconds
-</div>
 <div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;">
 <h5 class="text-center mb-3 fw-bold">Online Game</h5>
 <button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
