@@ -989,7 +989,7 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
         joinOnlineGame(matchData.gameId, matchData.playerRole);
       } else if (matchData.status === 'timeout') {
         // Zaman aşımı
-        matchStatusText.textContent = "Eşleşme bulunamadı. Tekrar deneyin.";
+        matchStatusText.textContent = "No matches found. Try again.";
         findMatchBtn.disabled = false;
         matchmakingRef.remove();
         clearTimeout(matchTimeout);
