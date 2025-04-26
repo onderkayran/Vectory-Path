@@ -182,15 +182,17 @@
     }
     
     .opponent-level {
-      background: linear-gradient(135deg, #EA4335 0%, #FBBC05 100%);
-      color: white;
+       background: linear-gradient(135deg, #EA4335 0%, #FBBC05 100%);
+  color: white;
+  border: 2px solid black;
     }
     
-    .level-label {
-      position: absolute;
-      top: -20px;
-      font-size: 0.8rem;
-      white-space: nowrap;
+   .level-label {
+  position: absolute;
+  top: -20px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  color: black !important;
     }
 
     .level-up-notification {
@@ -236,7 +238,7 @@
   .level-label {
     font-size: 0.7rem;
     top: -18px;
-    color: black;
+    color: black !important;
   }
   
   canvas {
@@ -315,7 +317,7 @@
   </div>
   <div class="level-badge opponent-level" id="opponentLevelBadge" style="display:none;">
     <span id="opponentLevelValue">1</span>
-    <span class="level-label">Opponent</span>
+    <span class="level-label" style="color: black;">Opponent</span>
   </div>
 </div>
 
