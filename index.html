@@ -503,7 +503,7 @@
 
   // Ses efektleri
   const moveSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2124/2124-preview.mp3');
-  const  = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+  const winSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
   const loseSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2014/2014-preview.mp3');
 
   // Level sistemi fonksiyonları
@@ -916,11 +916,11 @@
         if (winner === 2) {
             winnerText.textContent = "Congratulations, You Won!";
             winnerModal.style.display = 'flex';
-            playLoseSound();
+            playWinSound();
         } else {
             loserText.textContent = "Unfortunately, You Lost!";
             loserModal.style.display = 'flex';
-            playWinSound();
+            playLoseSound();
         }
       } else if (winner === 1) {
           winnerText.textContent = "Congratulations, You Won!";
