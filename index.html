@@ -155,7 +155,7 @@
       height: 5px;
     }
 
-    /* Yeni level gösterme stili */
+    /* Level gösterme stili */
     .level-display-container {
       display: flex;
       justify-content: space-between;
@@ -293,7 +293,6 @@
     background-color: rgba(52, 168, 83, 0.3) !important;
     backdrop-filter: blur(6px);
   }
-
 </style>
 </head>
 <body>
@@ -303,7 +302,6 @@
   Vectory Path
 </h1>
 
-<!-- Yeni level gösterme alanı -->
 <div class="level-display-container">
   <div class="level-badge player-level">
     <span id="playerLevelBadge">1</span>
@@ -423,7 +421,6 @@
     Don't show this tutorial again
   </label>
 </div>
-
 </div>
 </div>
 <div class="modal-overlay" id="winnerModal" style="display:none;">
@@ -470,7 +467,8 @@
   let currentGameRef = null;
   let isOnlineGame = false;
   let playerRole = null;
-  let myPlayerId = Math.random().toString(36).substr(2, 9);
+  let myPlayerId = localStorage.getItem('vectoryPathPlayerId') || Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('vectoryPathPlayerId', myPlayerId);
   let matchmakingRef = null;
   let matchTimeout = null;
 
@@ -480,6 +478,159 @@
   let onlineLosses = 0;
   let totalWins = 0;
   let opponentLevel = null;
+
+  // LocalStorage'dan oyuncu verilerini yükle
+  function loadPlayerDataFromLocalStorage() {
+    const playerData = localStorage.getItem('vectoryPathPlayerData');
+    if (playerData) {
+      try {
+        const data = JSON.parse(playerData);
+        playerLevel = data.level || 1;
+        onlineWins = data.onlineWins || 0;
+        onlineLosses = data.onlineLosses || 0;
+        totalWins = data.totalWins || 0;
+        myPlayerId = data.playerId || myPlayerId;
+        updateLevelDisplay();
+      } catch (e) {
+        console.error('Error parsing player data from localStorage', e);
+      }
+    }
+  }
+
+  // LocalStorage'a oyuncu verilerini kaydet
+  function savePlayerDataToLocalStorage() {
+    const playerData = {
+      playerId: myPlayerId,
+      level: playerLevel,
+      onlineWins: onlineWins,
+      onlineLosses: onlineLosses,
+      totalWins: totalWins,
+      lastUpdated: new Date().toISOString()
+    };
+    localStorage.setItem('vectoryPathPlayerData', JSON.stringify(playerData));
+  }
+
+  // Firebase'den oyuncu verilerini yükle ve localStorage ile senkronize et
+  function loadPlayerData() {
+    // Önce localStorage'dan yükle
+    loadPlayerDataFromLocalStorage();
+    
+    // Sonra Firebase'den yükle ve karşılaştır
+    const playerRef = database.ref(`players/${myPlayerId}`);
+    playerRef.once('value').then(snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        // Firebase'de daha yeni veri varsa onu kullan
+        const firebaseUpdated = new Date(data.lastPlayed || 0);
+        const localUpdated = new Date(JSON.parse(localStorage.getItem('vectoryPathPlayerData') || '{}').lastUpdated || 0);
+        
+        if (!data.lastPlayed || firebaseUpdated > localUpdated) {
+          playerLevel = data.level || playerLevel;
+          onlineWins = data.onlineWins || onlineWins;
+          onlineLosses = data.onlineLosses || onlineLosses;
+          totalWins = data.totalWins || totalWins;
+          updateLevelDisplay();
+          savePlayerDataToLocalStorage();
+        } else if (localUpdated > firebaseUpdated) {
+          // LocalStorage'daki veri daha yeni ise Firebase'i güncelle
+          updatePlayerData();
+        }
+      } else {
+        // Firebase'de kayıt yoksa oluştur
+        playerRef.set({
+          level: playerLevel,
+          onlineWins: onlineWins,
+          onlineLosses: onlineLosses,
+          totalWins: totalWins,
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          lastPlayed: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+    }).catch(error => {
+      console.error("Firebase'den veri yüklenirken hata:", error);
+    });
+  }
+
+  function updatePlayerData() {
+    // Firebase'e kaydet
+    const playerRef = database.ref(`players/${myPlayerId}`);
+    playerRef.set({
+      level: playerLevel,
+      onlineWins: onlineWins,
+      onlineLosses: onlineLosses,
+      totalWins: totalWins,
+      lastPlayed: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      // Başarılı kayıttan sonra localStorage'ı güncelle
+      savePlayerDataToLocalStorage();
+    }).catch(error => {
+      console.error("Firebase'e veri kaydedilirken hata:", error);
+      // Firebase'e kaydedilemezse sadece localStorage'a kaydet
+      savePlayerDataToLocalStorage();
+    });
+  }
+
+  function updateLevelDisplay() {
+    document.getElementById('playerLevelBadge').textContent = playerLevel;
+    
+    if (isOnlineGame) {
+      if (opponentLevel) {
+        document.getElementById('opponentLevelBadge').style.display = 'flex';
+        document.getElementById('opponentLevelValue').textContent = opponentLevel;
+      } else {
+        document.getElementById('opponentLevelBadge').style.display = 'none';
+      }
+    } else {
+      document.getElementById('opponentLevelBadge').style.display = 'none';
+    }
+  }
+
+  function recordWin() {
+    totalWins++;
+    onlineWins++;
+    
+    const newLevel = Math.max(1, Math.floor(onlineWins / 5) - Math.floor(onlineLosses / 5) + 1);
+    if (newLevel > playerLevel) {
+      playerLevel = newLevel;
+      showLevelUpNotification();
+    }
+    
+    updatePlayerData();
+  }
+
+  function recordLoss() {
+    onlineLosses++;
+    
+    const newLevel = Math.max(1, Math.floor(onlineWins / 5) - Math.floor(onlineLosses / 5) + 1);
+    if (newLevel < playerLevel) {
+      playerLevel = newLevel;
+      showLevelDownNotification();
+    }
+    
+    updatePlayerData();
+  }
+
+  function showLevelUpNotification() {
+    const levelUpModal = document.createElement('div');
+    levelUpModal.className = 'level-up-notification';
+    levelUpModal.innerHTML = `<h4>Level Up!</h4><p>You reached level ${playerLevel}!</p>`;
+    document.body.appendChild(levelUpModal);
+    
+    setTimeout(() => {
+      levelUpModal.remove();
+    }, 3000);
+  }
+
+  function showLevelDownNotification() {
+    const levelDownModal = document.createElement('div');
+    levelDownModal.className = 'level-down-notification';
+    levelDownModal.innerHTML = `<h4>Level Down!</h4><p>You dropped to level ${playerLevel}!</p>`;
+    document.body.appendChild(levelDownModal);
+    
+    setTimeout(() => {
+      levelDownModal.remove();
+    }, 3000);
+  }
 
   // Canvas ve UI elementleri
   const canvas = document.getElementById('gameCanvas');
@@ -505,125 +656,6 @@
   const moveSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2124/2124-preview.mp3');
   const winSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
   const loseSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2014/2014-preview.mp3');
-
-  // Level sistemi fonksiyonları
-  function loadPlayerData() {
-    const playerRef = database.ref(`players/${myPlayerId}`);
-    playerRef.once('value').then(snapshot => {
-      const data = snapshot.val();
-      if (data) {
-        playerLevel = data.level || 1;
-        onlineWins = data.onlineWins || 0;
-        onlineLosses = data.onlineLosses || 0;
-        totalWins = data.totalWins || 0;
-        updateLevelDisplay();
-      } else {
-        // Yeni oyuncu için varsayılan değerler
-        playerRef.set({
-          level: 1,
-          onlineWins: 0,
-          onlineLosses: 0,
-          totalWins: 0,
-          createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
-      }
-    });
-  }
-
-  function updateLevelDisplay() {
-    document.getElementById('playerLevelBadge').textContent = playerLevel;
-    
-    if (isOnlineGame) {
-      // Rakip seviyesini göster
-      if (opponentLevel) {
-        document.getElementById('opponentLevelBadge').style.display = 'flex';
-        document.getElementById('opponentLevelValue').textContent = opponentLevel;
-      } else {
-        document.getElementById('opponentLevelBadge').style.display = 'none';
-      }
-    } else {
-      document.getElementById('opponentLevelBadge').style.display = 'none';
-    }
-  }
-
-  function recordWin() {
-    totalWins++;
-    onlineWins++;
-    
-    // Seviye hesaplaması
-    const newLevel = Math.max(1, Math.floor(onlineWins / 5) - Math.floor(onlineLosses / 5) + 1);
-    if (newLevel > playerLevel) {
-      playerLevel = newLevel;
-      showLevelUpNotification();
-    }
-    
-    updatePlayerData();
-  }
-
-  function recordLoss() {
-    onlineLosses++;
-    
-    // Seviye hesaplaması
-    const newLevel = Math.max(1, Math.floor(onlineWins / 5) - Math.floor(onlineLosses / 5) + 1);
-    if (newLevel < playerLevel) {
-      playerLevel = newLevel;
-      showLevelDownNotification();
-    }
-    
-    updatePlayerData();
-  }
-
-  function updatePlayerData() {
-    const playerRef = database.ref(`players/${myPlayerId}`);
-    playerRef.set({
-      level: playerLevel,
-      onlineWins: onlineWins,
-      onlineLosses: onlineLosses,
-      totalWins: totalWins,
-      lastPlayed: firebase.database.ServerValue.TIMESTAMP
-    });
-  }
-
-  function showLevelUpNotification() {
-    const levelUpModal = document.createElement('div');
-    levelUpModal.className = 'level-up-notification';
-    levelUpModal.innerHTML = `<h4>Level Up!</h4><p>You reached level ${playerLevel}!</p>`;
-    document.body.appendChild(levelUpModal);
-    
-    setTimeout(() => {
-      levelUpModal.remove();
-    }, 3000);
-  }
-
-  function showLevelDownNotification() {
-    const levelDownModal = document.createElement('div');
-    levelDownModal.className = 'level-down-notification';
-    levelDownModal.innerHTML = `<h4>Level Down!</h4><p>You dropped to level ${playerLevel}!</p>`;
-    document.body.appendChild(levelDownModal);
-    
-    setTimeout(() => {
-      levelDownModal.remove();
-    }, 3000);
-  }
-
-  // Ses efektlerini oynatma fonksiyonları
-  function playMoveSound() {
-    moveSound.volume = 0.2;
-    moveSound.currentTime = 0;
-    moveSound.play();
-  }
-
-  function playWinSound() {
-    winSound.volume = 0.4;
-    winSound.currentTime = 0;
-    winSound.play();
-  }
-
-  function playLoseSound() {
-    loseSound.volume = 0.4;
-    loseSound.currentTime = 0;
-    loseSound.play();
-  }
 
   // Canvas boyutlandırma
   function resizeCanvas() {
@@ -750,6 +782,7 @@
     }
     return false;
   }
+
   // Grid çiz
   function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -896,11 +929,10 @@
     lastPoint = move.to;
     currentPlayer = move.player === 1 ? 2 : 1;
     drawGrid();
+    playMoveSound();
     
     if (isEndPoint(move.to)) {
       endGame(move.player);
-    } else if (!canMove(lastPoint)) {
-  endGame(move.player);
     } else if (!canMove(lastPoint)) {
       endGame(move.player);
     }
@@ -917,19 +949,23 @@
             winnerText.textContent = "Congratulations, You Won!";
             winnerModal.style.display = 'flex';
             playWinSound();
+            recordWin();
         } else {
             loserText.textContent = "Unfortunately, You Lost!";
             loserModal.style.display = 'flex';
             playLoseSound();
+            recordLoss();
         }
       } else if (winner === 1) {
           winnerText.textContent = "Congratulations, You Won!";
           winnerModal.style.display = 'flex';
           playWinSound();
+          recordWin();
       } else {
           loserText.textContent = modeSelect.value === 'robot' ? "Unfortunately, You Lost!" : "Congratulations, You Won!";
           loserModal.style.display = 'flex';
           playLoseSound();
+          recordLoss();
       }
     }
   }
@@ -1293,6 +1329,7 @@
     
     resizeCanvas();
     updateOnlineStatus(`Game started! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
+    document.getElementById('leaveGameBtn').style.display = 'block';
   }
 
   function sendOnlineMove(move) {
@@ -1387,6 +1424,7 @@
     findMatchBtn.disabled = false;
     matchStatus.style.display = 'none';
     matchProgress.style.display = 'block';
+    document.getElementById('leaveGameBtn').style.display = 'none';
   }
 
   function updateOnlineStatus(text, role) {
@@ -1489,6 +1527,11 @@
     if (modeSelect.value !== 'online') { startGame(); }
     startGame();
     setupConnectionMonitoring();
+    
+    // Önce localStorage'dan hızlı yükleme yap
+    loadPlayerDataFromLocalStorage();
+    
+    // Sonra Firebase'den senkronizasyon yap
     loadPlayerData();
   });
   
@@ -1496,10 +1539,10 @@
 
   // Öğretici fonksiyonları
   function initTutorial() {
-  if (localStorage.getItem("vectoryDontShowTutorial") === "true") {
-    document.getElementById("tutorialModal").style.display = "none";
-    return;
-  }
+    if (localStorage.getItem("vectoryDontShowTutorial") === "true") {
+      document.getElementById("tutorialModal").style.display = "none";
+      return;
+    }
 
     const tutorialModal = document.getElementById('tutorialModal');
     const closeTutorial = document.getElementById('closeTutorial');
@@ -1514,9 +1557,9 @@
     closeTutorial.addEventListener('click', () => {
       tutorialModal.style.display = 'none';
     
-    if (document.getElementById('dontShowTutorialAgain').checked) {
-      localStorage.setItem("vectoryDontShowTutorial", "true");
-    }
+      if (document.getElementById('dontShowTutorialAgain').checked) {
+        localStorage.setItem("vectoryDontShowTutorial", "true");
+      }
     });
 
     nextBtn.addEventListener('click', () => {
@@ -1544,9 +1587,9 @@
     skipBtn.addEventListener('click', () => {
       tutorialModal.style.display = 'none';
     
-    if (document.getElementById('dontShowTutorialAgain').checked) {
-      localStorage.setItem("vectoryDontShowTutorial", "true");
-    }
+      if (document.getElementById('dontShowTutorialAgain').checked) {
+        localStorage.setItem("vectoryDontShowTutorial", "true");
+      }
     });
   }
 
@@ -1650,7 +1693,7 @@
   canvas.addEventListener("touchstart", function(e) {
     e.preventDefault();
 
- if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+    if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
@@ -1697,41 +1740,24 @@
     }, 1000);
   }
 
-  const originalProcessMoveLocally = processMoveLocally;
-  processMoveLocally = function(move) {
-    originalProcessMoveLocally(move);
-    playMoveSound();
-    const opponentPlayer = playerRole === 'player1' ? 2 : 1;
-    if (isOnlineGame) {
-      const isMyTurnNow = (playerRole === 'player1' && currentPlayer === 1) || (playerRole === 'player2' && currentPlayer === 2);
-      if (isMyTurnNow) {
-        startMoveTimer();
-      } else {
-        clearInterval(moveTimer);
-        document.getElementById("turnTimer").style.display = 'none';
-      }
-    }
-  };
+  // Ses efektlerini oynatma fonksiyonları
+  function playMoveSound() {
+    moveSound.volume = 0.2;
+    moveSound.currentTime = 0;
+    moveSound.play();
+  }
 
-  const originalStartOnlineGame = startOnlineGame;
-  startOnlineGame = function(gameData) {
-    originalStartOnlineGame(gameData);
-    const isMyTurn = (playerRole === 'player1' && gameData.currentPlayer === 'player1') ||
-                       (playerRole === 'player2' && gameData.currentPlayer === 'player2');
-    if (isMyTurn) {
-      startMoveTimer();
-    } else {
-      clearInterval(moveTimer);
-      document.getElementById("turnTimer").style.display = 'none';
-    }
-  };
+  function playWinSound() {
+    winSound.volume = 0.4;
+    winSound.currentTime = 0;
+    winSound.play();
+  }
 
-  const originalEndOnlineGame = endOnlineGame;
-  endOnlineGame = function(winner) {
-    clearInterval(moveTimer);
-    document.getElementById("turnTimer").style.display = 'none';
-    originalEndOnlineGame(winner);
-  };
+  function playLoseSound() {
+    loseSound.volume = 0.4;
+    loseSound.currentTime = 0;
+    loseSound.play();
+  }
 
   function leaveOnlineGame() {
     if (!isOnlineGame || !currentGameRef) return;
@@ -1747,181 +1773,6 @@
   }
 
   document.getElementById('leaveGameBtn').addEventListener('click', leaveOnlineGame);
-
-  const originalJoinOnlineGame = joinOnlineGame;
-  joinOnlineGame = function(gameId, role) {
-    originalJoinOnlineGame(gameId, role);
-    document.getElementById('leaveGameBtn').style.display = 'block';
-  };
-
-  const originalCleanupOnlineGame = cleanupOnlineGame;
-  cleanupOnlineGame = function() {
-    clearInterval(moveTimer);
-    document.getElementById("turnTimer").style.display = 'none';
-    document.getElementById('leaveGameBtn').style.display = 'none';
-    originalCleanupOnlineGame();
-  };
-
-  function isVictory(p) {
-    return p.x === gridW - 1 && p.y === 0;
-  }
-
-  function getAvailableMoves(from) {
-    const moves = [];
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        if (dx === 0 && dy === 0) continue;
-        const nx = from.x + dx;
-        const ny = from.y + dy;
-        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
-          const next = { x: nx, y: ny };
-          if (!edgeExists(from, next) && !isObstacle(next)) {
-            moves.push(next);
-          }
-        }
-      }
-    }
-    return moves;
-  }
-
-  function getMediumMove(from) {
-    const options = getAvailableMoves(from);
-    const goal = { x: gridW - 1, y: 0 };
-
-    return options.reduce((best, move) => {
-      const dist = Math.hypot(goal.x - move.x, goal.y - move.y);
-      const score = dist + Math.random() * 2;
-      return !best || score < best.score ? { move, score } : best;
-    }, null)?.move || null;
-  }
-
-  function getHardMove(from) {
-    const options = getAvailableMoves(from);
-    const goal = { x: gridW - 1, y: 0 };
-
-    let bestMove = null;
-    let bestScore = -Infinity;
-
-    for (const move of options) {
-      edges.push({ from, to: move, player: 2 });
-      const playerOptions = getAvailableMoves(move);
-      edges.pop();
-
-      const dist = Math.hypot(goal.x - move.x, goal.y - move.y);
-      let score = -dist;
-      score -= playerOptions.length * 3;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-    return bestMove || options[0];
-  }
-
-function getExpertMove(from) {
-  const options = getAvailableMoves(from);
-  if (options.length === 0) return null;
-
-  let bestMove = null;
-  let bestScore = -Infinity;
-  const goal = { x: gridW - 1, y: 0 };
-
-  for (const move of options) {
-    edges.push({ from, to: move, player: 2 });
-    const playerMoves = getAvailableMoves(move);
-
-    let totalScore = 0;
-    let loseImmediately = false;
-
-    if (playerMoves.length === 0) {
-      edges.pop();
-      return move; // Robot burada oyuncuyu hamlesiz bırakarak kazanıyor
-    }
-
-    for (const pMove of playerMoves) {
-      edges.push({ from: move, to: pMove, player: 1 });
-
-      if (isVictory(pMove)) {
-        loseImmediately = true;
-        edges.pop();
-        break;
-      }
-
-      const robotReplies = getAvailableMoves(pMove);
-
-      for (const reply of robotReplies) {
-        edges.push({ from: pMove, to: reply, player: 2 });
-        const playerOptions = getAvailableMoves(reply);
-
-        let score = 0;
-        if (playerOptions.length === 0) score += 1000;
-        if (isVictory(reply)) score += 500;
-        score -= Math.hypot(goal.x - reply.x, goal.y - reply.y) * 2;
-        score -= playerOptions.length * 10;
-
-        totalScore += score;
-        edges.pop();
-      }
-
-      edges.pop();
-    }
-
-    edges.pop();
-
-    // 🔁 Eğer tüm hamleler loseImmediately ise, yine de en azından birini seçmeye izin ver
-    if (loseImmediately) {
-      console.log("Hamle güvenli değil ama başka seçeneğimiz olmayabilir:", move);
-      if (!bestMove) {
-        bestMove = move;
-        bestScore = -9999;
-      }
-      continue;
-    }
-
-    if (totalScore > bestScore) {
-      bestScore = totalScore;
-      bestMove = move;
-    }
-  }
-
-  console.log("Seçilen en iyi hamle (expert):", bestMove, "Puan:", bestScore);
-  return bestMove;
-}
-
-
-  function getBestMove(from) {
-    const settings = {
-      easy: { mistakeRate: 0.5 },
-      medium: { mistakeRate: 0.3 },
-      hard: { mistakeRate: 0.04 },
-      expert: { mistakeRate: 0.0001 }
-    }[difficultySelect.value];
-
-    if (Math.random() < settings.mistakeRate) {
-      const options = getAvailableMoves(from);
-      return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
-    }
-
-    switch (difficultySelect.value) {
-      case 'expert': return getExpertMove(from);
-      case 'hard': return getHardMove(from);
-      case 'medium': return getMediumMove(from);
-      default:
-        const options = getAvailableMoves(from);
-        return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
-    }
-  }
-
-  function robotMove() {
-    if (!gameActive || modeSelect.value !== "robot") return;
-    const move = getBestMove(lastPoint);
-    if (move) {
-      makeMove(move);
-    } else {
-      endGame(1);
-    }
-  }
 </script>
 </body>
 </html>
