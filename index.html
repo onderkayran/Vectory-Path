@@ -177,7 +177,8 @@
     
     .player-level {
       background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      color: white;
+  color: white;
+  border: 2px solid black;
     }
     
     .opponent-level {
@@ -232,8 +233,10 @@
     }
   
 @media (max-width: 600px) {
-  .game-container {
-    padding: 10px;
+  .level-label {
+    font-size: 0.7rem;
+    top: -18px;
+    color: black;
   }
   
   canvas {
@@ -275,8 +278,11 @@
   }
   
   .level-label {
-    font-size: 0.7rem;
-    top: -18px;
+    position: absolute;
+  top: -20px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  color: black;
   }
 }
 
@@ -305,7 +311,7 @@
 <div class="level-display-container">
   <div class="level-badge player-level">
     <span id="playerLevelBadge">1</span>
-    <span class="level-label">Your Level</span>
+    <span class="level-label" style="color: black;">Level</span>
   </div>
   <div class="level-badge opponent-level" id="opponentLevelBadge" style="display:none;">
     <span id="opponentLevelValue">1</span>
