@@ -368,18 +368,10 @@ background: white; border: 2px solid #444; padding: 20px; z-index: 1001; box-sha
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-  // Firebase konfigürasyonu
-  const firebaseConfig = {
-    apiKey: "AIzaSyB4lQ2KZanAK3fzRmwXhedh4rtfb6PZ9FY",
-    authDomain: "vectory-path.firebaseapp.com",
-    databaseURL: "https://vectory-path-default-rtdb.firebaseio.com",
-    projectId: "vectory-path",
-    storageBucket: "vectory-path.firebasestorage.app",
-    messagingSenderId: "462766360594",
-    appId: "1:462766360594:web:9a9443f056d45155c8b0cb",
-    measurementId: "G-KCKK8ZRHTT"
-  };
+  firebase.initializeApp(firebaseConfig);
+</script>
 
   // Firebase başlatma
   firebase.initializeApp(firebaseConfig);
