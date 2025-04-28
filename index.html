@@ -487,6 +487,16 @@
       height: 8px;
     }
   }
+
+  #onlinePanel {
+    z-index: 1100;
+    position: relative;
+    margin-bottom: 70px; /* bottom-nav yüksekliği kadar boşluk bırak */
+  }
+
+  .bottom-nav {
+    z-index: 1000;
+  }
 </style>
 </head>
 <body>
@@ -1939,6 +1949,8 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       lastPoint = null;
       obstacles = [];
       drawGrid();
+      // Online modda eşleşme bulunana kadar oyun pasif olsun
+      gameActive = false;
     } else {
       document.getElementById('onlinePanel').style.display = 'none';
       document.getElementById('firstMoveHelp').style.display = 'block';
@@ -1949,6 +1961,8 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         matchmakingRef.remove();
         matchmakingRef = null;
       }
+      // Diğer modlarda oyun aktif
+      gameActive = true;
     }
   });
 
