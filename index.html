@@ -1003,8 +1003,8 @@
     onlineWins++;
     addXP(true);
     
-    const newLevel = calculateLevel(onlineWins, onlineLosses);
     const oldLevel = playerLevel;
+    const newLevel = calculateLevel(onlineWins, onlineLosses);
     playerLevel = newLevel;
     
     if (newLevel > oldLevel) {
@@ -1012,6 +1012,7 @@
     }
     
     updatePlayerData();
+    updateLevelDisplay();
   }
 
   // Record loss fonksiyonunu güncelle
@@ -1019,8 +1020,8 @@
     onlineLosses++;
     addXP(false);
     
-    const newLevel = calculateLevel(onlineWins, onlineLosses);
     const oldLevel = playerLevel;
+    const newLevel = calculateLevel(onlineWins, onlineLosses);
     playerLevel = newLevel;
     
     if (newLevel < oldLevel) {
@@ -1028,6 +1029,7 @@
     }
     
     updatePlayerData();
+    updateLevelDisplay();
   }
 
   function showLevelUpNotification() {
