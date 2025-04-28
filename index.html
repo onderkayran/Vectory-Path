@@ -631,6 +631,23 @@
   .bottom-nav {
     z-index: 1000;
   }
+
+  #firstMoveHelp {
+    font-size: 14px;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (max-width: 600px) {
+    #firstMoveHelp {
+      font-size: 12px;
+      padding: 8px;
+      margin-top: 5px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -668,10 +685,6 @@
 <strong>Online Game:</strong>
 <span id="gameStatusText">Connecting...</span>
 <span class="badge ms-2" id="playerRoleBadge"></span>
-</div>
-<div class="alert alert-info mt-3" id="firstMoveHelp" style="font-size: 14px;">
-<strong>First Move Tip:</strong><br/>
-    Click one of the points adjacent to the bottom-left corner (green dot) to start the game. 
 </div>
 <button class="btn btn-danger w-100 mb-2" id="leaveGameBtn" style="display:none;">Leave Game</button>
 <div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
@@ -2094,13 +2107,6 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       if (mode === 'robot' && currentPlayer === 2) {
         setTimeout(robotMove, 500);
       }
-    }
-    
-    // İlk hamle yardımını gizle
-    if (mode === 'robot' || mode === 'online') {
-      document.getElementById('firstMoveHelp').style.display = 'none';
-    } else {
-      document.getElementById('firstMoveHelp').style.display = 'block';
     }
     
     winnerModal.style.display = 'none';
