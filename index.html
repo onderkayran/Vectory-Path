@@ -631,67 +631,6 @@
   .bottom-nav {
     z-index: 1000;
   }
-
-  #firstMoveHelp {
-    font-size: 14px;
-    margin-top: 10px;
-    padding: 10px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  @media (max-width: 600px) {
-    #firstMoveHelp {
-      font-size: 12px;
-      padding: 8px;
-      margin-top: 5px;
-    }
-  }
-
-  .grid-controls {
-    margin: 10px auto;
-    text-align: center;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    max-width: 300px;
-  }
-
-  .grid-size-control {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-  }
-
-  .grid-size-control label {
-    margin-right: 5px;
-    font-weight: 500;
-  }
-
-  .grid-size-control input {
-    width: 50px;
-    text-align: center;
-  }
-
-  @media (max-width: 600px) {
-    .grid-controls {
-      margin: 5px auto;
-      padding: 8px;
-      max-width: 250px;
-    }
-
-    .grid-size-control input {
-      width: 40px;
-      font-size: 14px;
-    }
-
-    .grid-size-control label {
-      font-size: 14px;
-    }
-  }
 </style>
 </head>
 <body>
@@ -725,20 +664,14 @@
 
 <canvas id="gameCanvas"></canvas>
 
-<!-- Grid seçim menüsü -->
-<div class="grid-controls">
-  <div class="grid-size-control">
-    <label>Grid:</label>
-    <input class="form-control" id="gridWidth" max="10" min="3" type="number" value="6"/>
-    <span>x</span>
-    <input class="form-control" id="gridHeight" max="10" min="3" type="number" value="5"/>
-  </div>
-</div>
-
 <div class="alert alert-warning" id="onlineStatus">
 <strong>Online Game:</strong>
 <span id="gameStatusText">Connecting...</span>
 <span class="badge ms-2" id="playerRoleBadge"></span>
+</div>
+<div class="alert alert-info mt-3" id="firstMoveHelp" style="font-size: 14px;">
+<strong>First Move Tip:</strong><br/>
+    Click one of the points adjacent to the bottom-left corner (green dot) to start the game. 
 </div>
 <button class="btn btn-danger w-100 mb-2" id="leaveGameBtn" style="display:none;">Leave Game</button>
 <div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
@@ -757,22 +690,29 @@
 </div>
 
 <div class="bottom-nav">
-  <div class="btn-group">
-    <select class="form-select me-1" id="difficultySelect">
-      <option selected value="easy">Easy</option>
-      <option value="medium">Medium</option>
-      <option value="hard">Hard</option>
-      <option value="expert">Expert</option>
-    </select>
-    
-    <select class="form-select" id="modeSelect">
-      <option selected value="robot">Robot</option>
-      <option value="online">Online</option>
-    </select>
-  </div>
+<div class="btn-group">
+  <label class="me-2">Grid:</label>
+  <input class="form-control me-1" id="gridWidth" max="10" min="3" style="width: 50px;" type="number" value="6"/>
+  <span class="me-1">x</span>
+  <input class="form-control" id="gridHeight" max="10" min="3" style="width: 50px;" type="number" value="5"/>
+</div>
 
-  <button class="btn btn-primary me-1" id="startButton">Start</button>
-  <button class="btn btn-info text-white me-1" id="helpButton">Help</button>
+<div class="btn-group">
+  <select class="form-select me-1" id="difficultySelect">
+    <option selected value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+    <option value="expert">Expert</option>
+  </select>
+  
+  <select class="form-select" id="modeSelect">
+    <option selected value="robot">Robot</option>
+    <option value="online">Online</option>
+  </select>
+</div>
+
+<button class="btn btn-primary me-1" id="startButton">Start</button>
+<button class="btn btn-info text-white me-1" id="helpButton">Help</button>
 </div>
 
 <div class="modal-overlay" id="helpModal">
@@ -1976,9 +1916,6 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     obstacles = gameData.obstacles || [];
     
     currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
-    
-    // İlk hamle yardımını gizle
-    document.getElementById('firstMoveHelp').style.display = 'none';
     
     // Rakip seviyesini yükle
     const opponentId = playerRole === 'player1' ? gameData.player2 : gameData.player1;
