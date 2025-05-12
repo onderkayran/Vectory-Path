@@ -1463,7 +1463,30 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         return;
     }
     
-    // 2. Expert mod için gelişmiş engelleme stratejisi
+    // 2. Bitiş noktasına komşu noktalara gitme stratejisi
+    if (difficulty === 'medium' || difficulty === 'hard' || difficulty === 'expert') {
+        const endAdjacentMoves = [];
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const nx = endPoint.x + dx;
+                const ny = endPoint.y + dy;
+                if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+                    const next = { x: nx, y: ny };
+                    if (!edgeExists(lastPoint, next) && !isObstacle(next) && isAdjacent(lastPoint, next)) {
+                        endAdjacentMoves.push(next);
+                    }
+                }
+            }
+        }
+        
+        if (endAdjacentMoves.length > 0) {
+            makeMove(endAdjacentMoves[0]);
+            return;
+        }
+    }
+    
+    // 3. Expert mod için gelişmiş engelleme stratejisi
     if (difficulty === 'expert') {
         const safeMoves = [];
         for (let dy = -1; dy <= 1; dy++) {
@@ -1492,9 +1515,8 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         }
     }
     
-    // 3. Hiçbir engelleme yapılamıyorsa, oyunu uzatacak hamle yap
+    // 4. Hiçbir strateji uygulanamazsa, güvenli bir hamle yap
     const safeMoves = [];
-    const endAdjacentMoves = [];
     for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
             if (dx === 0 && dy === 0) continue;
@@ -1504,16 +1526,11 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
                 const next = { x: nx, y: ny };
                 if (!edgeExists(lastPoint, next) && !isObstacle(next)) {
                     const isAdjacentToEnd = isAdjacent(next, endPoint);
-                    const tempEdges = [...edges, {from: lastPoint, to: next, player: 2}];
-                    const playerCanWin = canPlayerWinAfterMove(next);
                     if (!isAdjacentToEnd) {
+                        const tempEdges = [...edges, {from: lastPoint, to: next, player: 2}];
+                        const playerCanWin = canPlayerWinAfterMove(next);
                         if (!playerCanWin) {
                             safeMoves.push(next);
-                        }
-                    } else {
-                        // Bitişe komşu olan hamleleri ayrıca topla
-                        if (!playerCanWin) {
-                            endAdjacentMoves.push(next);
                         }
                     }
                 }
@@ -1523,8 +1540,6 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     
     if (safeMoves.length > 0) {
         makeMove(safeMoves[0]);
-    } else if (endAdjacentMoves.length > 0) {
-        makeMove(endAdjacentMoves[0]);
     } else if (!canMove(lastPoint)) {
         endGame(1); // Oyuncu kazanır
     }
