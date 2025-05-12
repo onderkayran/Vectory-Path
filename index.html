@@ -986,15 +986,14 @@
 
   function addXP(isWin) {
     currentXP += isWin ? XP_PER_WIN : XP_PER_LOSS;
-    
     // Level atlama kontrolü
     if (currentXP >= maxXP) {
       currentXP = 0;
       playerLevel++;
       showLevelUpNotification();
       updatePlayerData();
+      updateLevelDisplay(); // Seviye rozetini de güncelle
     }
-    
     updateLevelProgress();
   }
 
