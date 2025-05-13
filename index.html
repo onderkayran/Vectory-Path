@@ -825,9 +825,8 @@
   let opponentLevel = null;
 
   function calculateLevel(wins, losses) {
-    const winPoints = Math.floor(wins / 5);
-    const lossPoints = Math.floor(losses / 5);
-    return Math.max(1, winPoints - lossPoints + 1);
+    // Artık sadece kazançlara göre level hesaplanacak
+    return Math.max(1, Math.floor(wins / 5) + 1);
   }
 
   // LocalStorage'dan oyuncu verilerini yükle
@@ -1033,16 +1032,7 @@
     onlineLosses++;
     addXP(false);
     
-    const oldLevel = playerLevel;
-    const newLevel = calculateLevel(onlineWins, onlineLosses);
-    
-    if (newLevel !== oldLevel) {
-      playerLevel = newLevel;
-      if (newLevel < oldLevel) {
-        showLevelDownNotification();
-      }
-    }
-    
+    // Level düşme kontrolünü kaldır
     updatePlayerData();
     updateLevelDisplay();
     updateLevelProgress();
@@ -1060,14 +1050,8 @@
   }
 
   function showLevelDownNotification() {
-    const levelDownModal = document.createElement('div');
-    levelDownModal.className = 'level-down-notification';
-    levelDownModal.innerHTML = `<h4>Level Down!</h4><p>You dropped to level ${playerLevel}!</p>`;
-    document.body.appendChild(levelDownModal);
-    
-    setTimeout(() => {
-      levelDownModal.remove();
-    }, 3000);
+    // Level düşme bildirimini kaldır
+    return;
   }
 
   // Canvas ve UI elementleri
