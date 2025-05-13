@@ -634,6 +634,59 @@
   .bottom-nav {
     z-index: 1000;
   }
+
+  .level-up-animation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 1.2em;
+  }
+
+  .level-up-animation .arrow {
+    color: #FBBC05;
+    font-weight: bold;
+  }
+
+  .level-up-animation .new-level {
+    color: #FBBC05;
+    font-weight: bold;
+    font-size: 1.2em;
+  }
+
+  @keyframes levelChange {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .level-change-animation {
+    animation: levelChange 0.5s ease-in-out;
+    color: #34A853;
+  }
+
+  #levelProgressFill {
+    transition: width 0.5s ease-in-out;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  .fade-out {
+    animation: fadeOut 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  }
 </style>
 </head>
 <body>
@@ -946,17 +999,53 @@
   }
 
   function updateLevelDisplay() {
-    document.getElementById('playerLevelBadge').textContent = playerLevel;
+    // Daire içindeki seviye rozeti
+    const levelBadge = document.getElementById('playerLevelBadge');
+    const oldLevel = parseInt(levelBadge.textContent);
     
+    // Seviye çubuğundaki seviye bilgisi
+    const levelText = document.getElementById('currentLevel');
+    
+    // Eğer seviye değiştiyse animasyon ekle
+    if (oldLevel !== playerLevel) {
+        // Seviye rozeti animasyonu
+        levelBadge.classList.add('level-change-animation');
+        setTimeout(() => {
+            levelBadge.classList.remove('level-change-animation');
+        }, 1000);
+        
+        // Seviye çubuğu animasyonu
+        levelText.classList.add('level-change-animation');
+        setTimeout(() => {
+            levelText.classList.remove('level-change-animation');
+        }, 1000);
+    }
+    
+    // Seviye değerlerini güncelle
+    levelBadge.textContent = playerLevel;
+    levelText.textContent = playerLevel;
+    
+    // XP çubuğunu güncelle
+    const progressFill = document.getElementById('levelProgressFill');
+    const currentXPElement = document.getElementById('currentXP');
+    const maxXPElement = document.getElementById('maxXP');
+    
+    currentXPElement.textContent = currentXP;
+    maxXPElement.textContent = maxXP;
+    
+    const progressPercentage = (currentXP / maxXP) * 100;
+    progressFill.style.width = `${progressPercentage}%`;
+    
+    // Rakip seviyesi gösterimi
     if (isOnlineGame) {
-      if (opponentLevel) {
-        document.getElementById('opponentLevelBadge').style.display = 'flex';
-        document.getElementById('opponentLevelValue').textContent = opponentLevel;
-      } else {
-        document.getElementById('opponentLevelBadge').style.display = 'none';
-      }
+        if (opponentLevel) {
+            document.getElementById('opponentLevelBadge').style.display = 'flex';
+            document.getElementById('opponentLevelValue').textContent = opponentLevel;
+        } else {
+            document.getElementById('opponentLevelBadge').style.display = 'none';
+        }
     } else {
-      document.getElementById('opponentLevelBadge').style.display = 'none';
+        document.getElementById('opponentLevelBadge').style.display = 'none';
     }
   }
 
@@ -1035,12 +1124,26 @@
   function showLevelUpNotification() {
     const levelUpModal = document.createElement('div');
     levelUpModal.className = 'level-up-notification';
-    levelUpModal.innerHTML = `<h4>Level Up!</h4><p>You reached level ${playerLevel}!</p>`;
+    levelUpModal.innerHTML = `
+        <h4>Level Up!</h4>
+        <p>You reached level ${playerLevel}!</p>
+        <div class="level-up-animation">
+            <span class="old-level">${playerLevel - 1}</span>
+            <span class="arrow">→</span>
+            <span class="new-level">${playerLevel}</span>
+        </div>
+    `;
     document.body.appendChild(levelUpModal);
     
+    // Animasyon ekle
+    levelUpModal.classList.add('fade-in');
+    
     setTimeout(() => {
-      levelUpModal.remove();
-    }, 3000);
+        levelUpModal.classList.add('fade-out');
+        setTimeout(() => {
+            levelUpModal.remove();
+        }, 500);
+    }, 2500);
   }
 
   function showLevelDownNotification() {
