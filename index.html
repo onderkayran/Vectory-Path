@@ -818,15 +818,12 @@
   let onlineWins = 0;
   let onlineLosses = 0;
   let totalWins = 0;
-  let currentXP = 0;
-  const maxXP = 100;
-  const XP_PER_WIN = 20;
-  const XP_PER_LOSS = 5;
   let opponentLevel = null;
 
   function calculateLevel(wins, losses) {
-    // Artık sadece kazançlara göre level hesaplanacak
-    return Math.max(1, Math.floor(wins / 5) + 1);
+    const winPoints = Math.floor(wins / 5);
+    const lossPoints = Math.floor(losses / 5);
+    return Math.max(1, winPoints - lossPoints + 1);
   }
 
   // LocalStorage'dan oyuncu verilerini yükle
@@ -841,7 +838,6 @@
             onlineWins = data.onlineWins || 0;
             onlineLosses = data.onlineLosses || 0;
             totalWins = data.totalWins || 0;
-            currentXP = data.currentXP || 0;
             myPlayerId = data.playerId || myPlayerId;
             
             // Level tutarlılığını kontrol et
@@ -856,7 +852,6 @@
             }
             
             updateLevelDisplay();
-            updateLevelProgress();
         } catch (e) {
             console.error('Error parsing player data from localStorage', e);
         }
@@ -871,7 +866,6 @@
       onlineWins: onlineWins,
       onlineLosses: onlineLosses,
       totalWins: totalWins,
-      currentXP: currentXP,
       lastUpdated: new Date().toISOString()
     };
     localStorage.setItem('vectoryPathPlayerData', JSON.stringify(playerData));
@@ -898,7 +892,6 @@
                 onlineWins = data.onlineWins || onlineWins;
                 onlineLosses = data.onlineLosses || onlineLosses;
                 totalWins = data.totalWins || totalWins;
-                currentXP = data.currentXP || currentXP;
                 
                 // Level tutarlılığını kontrol et
                 const calculatedLevel = calculateLevel(onlineWins, onlineLosses);
@@ -912,7 +905,6 @@
                 }
                 
                 updateLevelDisplay();
-                updateLevelProgress();
                 savePlayerDataToLocalStorage();
             } else if (localUpdated > firebaseUpdated) {
                 // LocalStorage'daki veri daha yeni ise Firebase'i güncelle
@@ -925,7 +917,6 @@
                 onlineWins: onlineWins,
                 onlineLosses: onlineLosses,
                 totalWins: totalWins,
-                currentXP: currentXP,
                 createdAt: firebase.database.ServerValue.TIMESTAMP,
                 lastPlayed: firebase.database.ServerValue.TIMESTAMP
             });
@@ -943,7 +934,6 @@
       onlineWins: onlineWins,
       onlineLosses: onlineLosses,
       totalWins: totalWins,
-      currentXP: currentXP,
       lastPlayed: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
       // Başarılı kayıttan sonra localStorage'ı güncelle
@@ -970,6 +960,12 @@
     }
   }
 
+  // Level progress variables
+  let currentXP = 0;
+  const maxXP = 100;
+  const XP_PER_WIN = 20;
+  const XP_PER_LOSS = 5;
+
   function updateLevelProgress() {
     const progressFill = document.getElementById('levelProgressFill');
     const currentLevelElement = document.getElementById('currentLevel');
@@ -986,24 +982,19 @@
     
     // Level'i güncelle
     currentLevelElement.textContent = playerLevel;
-    
-    // Level badge'i güncelle
-    document.getElementById('playerLevelBadge').textContent = playerLevel;
   }
 
   function addXP(isWin) {
     currentXP += isWin ? XP_PER_WIN : XP_PER_LOSS;
-    
     // Level atlama kontrolü
     if (currentXP >= maxXP) {
-      currentXP = currentXP % maxXP;
+      currentXP = 0;
       playerLevel++;
       showLevelUpNotification();
       updatePlayerData();
+      updateLevelDisplay(); // Seviye rozetini de güncelle
     }
-    
     updateLevelProgress();
-    savePlayerDataToLocalStorage();
   }
 
   // Record win fonksiyonunu güncelle
@@ -1014,17 +1005,14 @@
     
     const oldLevel = playerLevel;
     const newLevel = calculateLevel(onlineWins, onlineLosses);
+    playerLevel = newLevel;
     
-    if (newLevel !== oldLevel) {
-      playerLevel = newLevel;
-      if (newLevel > oldLevel) {
-        showLevelUpNotification();
-      }
+    if (newLevel > oldLevel) {
+      showLevelUpNotification();
     }
     
     updatePlayerData();
     updateLevelDisplay();
-    updateLevelProgress();
   }
 
   // Record loss fonksiyonunu güncelle
@@ -1032,10 +1020,16 @@
     onlineLosses++;
     addXP(false);
     
-    // Level düşme kontrolünü kaldır
+    const oldLevel = playerLevel;
+    const newLevel = calculateLevel(onlineWins, onlineLosses);
+    playerLevel = newLevel;
+    
+    if (newLevel < oldLevel) {
+      showLevelDownNotification();
+    }
+    
     updatePlayerData();
     updateLevelDisplay();
-    updateLevelProgress();
   }
 
   function showLevelUpNotification() {
@@ -1050,8 +1044,14 @@
   }
 
   function showLevelDownNotification() {
-    // Level düşme bildirimini kaldır
-    return;
+    const levelDownModal = document.createElement('div');
+    levelDownModal.className = 'level-down-notification';
+    levelDownModal.innerHTML = `<h4>Level Down!</h4><p>You dropped to level ${playerLevel}!</p>`;
+    document.body.appendChild(levelDownModal);
+    
+    setTimeout(() => {
+      levelDownModal.remove();
+    }, 3000);
   }
 
   // Canvas ve UI elementleri
