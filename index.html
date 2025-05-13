@@ -309,6 +309,8 @@
       display: flex;
       justify-content: space-between;
       margin: -10px 0 20px 0;
+      position: relative;
+      z-index: 100;
     }
     
     .level-badge {
@@ -322,26 +324,30 @@
       font-weight: bold;
       position: relative;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
     }
     
     .player-level {
       background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
-  border: 2px solid black;
+      color: white;
+      border: 2px solid black;
     }
     
     .opponent-level {
-       background: linear-gradient(135deg, #EA4335 0%, #FBBC05 100%);
-  color: white;
-  border: 2px solid black;
+      background: linear-gradient(135deg, #EA4335 0%, #FBBC05 100%);
+      color: white;
+      border: 2px solid black;
     }
     
-   .level-label {
-  position: absolute;
-  top: -20px;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  color: black !important;
+    .level-label {
+      position: absolute;
+      top: -20px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      color: black !important;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 2px 5px;
+      border-radius: 4px;
     }
 
     .level-up-notification {
@@ -1019,6 +1025,11 @@
         setTimeout(() => {
             levelText.classList.remove('level-change-animation');
         }, 1000);
+
+        // Mobil cihazlarda titreşim efekti
+        if ('vibrate' in navigator) {
+            navigator.vibrate(100);
+        }
     }
     
     // Seviye değerlerini güncelle
@@ -1039,13 +1050,30 @@
     // Rakip seviyesi gösterimi
     if (isOnlineGame) {
         if (opponentLevel) {
-            document.getElementById('opponentLevelBadge').style.display = 'flex';
+            const opponentBadge = document.getElementById('opponentLevelBadge');
+            opponentBadge.style.display = 'flex';
             document.getElementById('opponentLevelValue').textContent = opponentLevel;
+            
+            // Rakip seviyesi değişiminde animasyon
+            if (opponentLevel !== parseInt(document.getElementById('opponentLevelValue').textContent)) {
+                opponentBadge.classList.add('level-change-animation');
+                setTimeout(() => {
+                    opponentBadge.classList.remove('level-change-animation');
+                }, 1000);
+            }
         } else {
             document.getElementById('opponentLevelBadge').style.display = 'none';
         }
     } else {
         document.getElementById('opponentLevelBadge').style.display = 'none';
+    }
+
+    // Mobil cihazlarda ekran yenileme
+    if (window.innerWidth <= 600) {
+        requestAnimationFrame(() => {
+            levelBadge.style.transform = 'scale(1)';
+            levelText.style.transform = 'scale(1)';
+        });
     }
   }
 
@@ -2535,6 +2563,10 @@ canvas.addEventListener("touchstart", function(e) {
   }
 
   function handleTouchMove(direction) {
+    const now = Date.now();
+    if (now - lastTouchTime < TOUCH_THROTTLE) return;
+    lastTouchTime = now;
+    
     if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
     const currentPoint = lastPoint || { x: 0, y: gridH - 1 };
@@ -2545,6 +2577,10 @@ canvas.addEventListener("touchstart", function(e) {
       case 'down': nextPoint.y++; break;
       case 'left': nextPoint.x--; break;
       case 'right': nextPoint.x++; break;
+      case 'up-left': nextPoint.x--; nextPoint.y--; break;
+      case 'up-right': nextPoint.x++; nextPoint.y--; break;
+      case 'down-left': nextPoint.x--; nextPoint.y++; break;
+      case 'down-right': nextPoint.x++; nextPoint.y++; break;
     }
 
     // Geçerli bir hamle mi kontrol et
