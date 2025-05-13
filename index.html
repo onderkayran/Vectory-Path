@@ -941,6 +941,10 @@
   let onlineLosses = 0;
   let totalWins = 0;
   let opponentLevel = null;
+  let currentXP = 0;
+  const maxXP = 100;
+  const XP_PER_WIN = 20;
+  const XP_PER_LOSS = 5;
 
   function calculateLevel(wins, losses) {
     const winPoints = Math.floor(wins / 5);
@@ -957,20 +961,14 @@
             const oldLevel = playerLevel;
             
             playerLevel = data.level || 1;
+            currentXP = data.currentXP || 0;
             onlineWins = data.onlineWins || 0;
             onlineLosses = data.onlineLosses || 0;
             totalWins = data.totalWins || 0;
             myPlayerId = data.playerId || myPlayerId;
             
-            // Level tutarlılığını kontrol et
-            const calculatedLevel = calculateLevel(onlineWins, onlineLosses);
-            if (calculatedLevel !== playerLevel) {
-                playerLevel = calculatedLevel;
-                if (calculatedLevel > oldLevel) {
-                    showLevelUpNotification();
-                } else if (calculatedLevel < oldLevel) {
-                    showLevelDownNotification();
-                }
+            if (oldLevel !== playerLevel) {
+                showLevelUpNotification();
             }
             
             updateLevelDisplay();
@@ -985,6 +983,7 @@
     const playerData = {
       playerId: myPlayerId,
       level: playerLevel,
+      currentXP: currentXP,
       onlineWins: onlineWins,
       onlineLosses: onlineLosses,
       totalWins: totalWins,
@@ -1011,6 +1010,7 @@
             
             if (!data.lastPlayed || firebaseUpdated > localUpdated) {
                 playerLevel = data.level || playerLevel;
+                currentXP = data.currentXP || currentXP;
                 onlineWins = data.onlineWins || onlineWins;
                 onlineLosses = data.onlineLosses || onlineLosses;
                 totalWins = data.totalWins || totalWins;
@@ -1036,6 +1036,7 @@
             // Firebase'de kayıt yoksa oluştur
             playerRef.set({
                 level: playerLevel,
+                currentXP: currentXP,
                 onlineWins: onlineWins,
                 onlineLosses: onlineLosses,
                 totalWins: totalWins,
@@ -1053,6 +1054,7 @@
     const playerRef = database.ref(`players/${myPlayerId}`);
     playerRef.set({
       level: playerLevel,
+      currentXP: currentXP,
       onlineWins: onlineWins,
       onlineLosses: onlineLosses,
       totalWins: totalWins,
@@ -1155,30 +1157,6 @@
     }
   }
 
-  // Level progress variables
-  let currentXP = 0;
-  const maxXP = 100;
-  const XP_PER_WIN = 20;
-  const XP_PER_LOSS = 5;
-
-  function updateLevelProgress() {
-    const progressFill = document.getElementById('levelProgressFill');
-    const currentLevelElement = document.getElementById('currentLevel');
-    const currentXPElement = document.getElementById('currentXP');
-    const maxXPElement = document.getElementById('maxXP');
-    
-    // XP'yi güncelle
-    currentXPElement.textContent = currentXP;
-    maxXPElement.textContent = maxXP;
-    
-    // Progress bar'ı güncelle
-    const progressPercentage = (currentXP / maxXP) * 100;
-    progressFill.style.width = `${progressPercentage}%`;
-    
-    // Level'i güncelle
-    currentLevelElement.textContent = playerLevel;
-  }
-
   function addXP(isWin) {
     currentXP += isWin ? XP_PER_WIN : XP_PER_LOSS;
     // Level atlama kontrolü
@@ -1187,7 +1165,7 @@
       playerLevel++;
       showLevelUpNotification();
       updatePlayerData();
-      updateLevelDisplay(); // Seviye rozetini de güncelle
+      updateLevelDisplay();
     }
     updateLevelProgress();
   }
@@ -1197,15 +1175,6 @@
     totalWins++;
     onlineWins++;
     addXP(true);
-    
-    const oldLevel = playerLevel;
-    const newLevel = calculateLevel(onlineWins, onlineLosses);
-    playerLevel = newLevel;
-    
-    if (newLevel > oldLevel) {
-      showLevelUpNotification();
-    }
-    
     updatePlayerData();
     updateLevelDisplay();
   }
@@ -1214,15 +1183,6 @@
   function recordLoss() {
     onlineLosses++;
     addXP(false);
-    
-    const oldLevel = playerLevel;
-    const newLevel = calculateLevel(onlineWins, onlineLosses);
-    playerLevel = newLevel;
-    
-    if (newLevel < oldLevel) {
-      showLevelDownNotification();
-    }
-    
     updatePlayerData();
     updateLevelDisplay();
   }
