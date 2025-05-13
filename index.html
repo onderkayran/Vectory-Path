@@ -634,6 +634,19 @@
   .bottom-nav {
     z-index: 1000;
   }
+
+  .level-badge {
+    transition: all 0.3s ease;
+  }
+  .level-badge.updating {
+    transform: scale(1.2);
+    animation: levelUpPulse 0.5s ease;
+  }
+  @keyframes levelUpPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
 </style>
 </head>
 <body>
@@ -826,6 +839,148 @@
     return Math.max(1, winPoints - lossPoints + 1);
   }
 
+  // Mobil cihaz kontrolü ve veri depolama
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  // Veri depolama için güvenli wrapper
+  const StorageManager = {
+      save: function(key, data) {
+          try {
+              if (isMobile) {
+                  // Mobil cihazlarda ekstra güvenlik
+                  const safeData = JSON.stringify({
+                      data: data,
+                      timestamp: new Date().getTime(),
+                      device: navigator.userAgent
+                  });
+                  localStorage.setItem(key, safeData);
+                  
+                  // Yedekleme olarak sessionStorage'a da kaydet
+                  sessionStorage.setItem(key, safeData);
+              } else {
+                  localStorage.setItem(key, JSON.stringify(data));
+              }
+              return true;
+          } catch (e) {
+              console.error('Storage save error:', e);
+              return false;
+          }
+      },
+      
+      load: function(key) {
+          try {
+              let data = localStorage.getItem(key);
+              if (!data && isMobile) {
+                  // localStorage'dan yüklenemezse sessionStorage'dan dene
+                  data = sessionStorage.getItem(key);
+              }
+              
+              if (data) {
+                  const parsed = JSON.parse(data);
+                  if (isMobile && parsed.timestamp) {
+                      // Mobil cihazlarda timestamp kontrolü
+                      const now = new Date().getTime();
+                      const age = now - parsed.timestamp;
+                      if (age > 24 * 60 * 60 * 1000) { // 24 saat
+                          console.warn('Stored data is older than 24 hours');
+                      }
+                      return parsed.data;
+                  }
+                  return parsed;
+              }
+              return null;
+          } catch (e) {
+              console.error('Storage load error:', e);
+              return null;
+          }
+      }
+  };
+
+  // Level yönetimi için güvenli wrapper
+  const LevelManager = {
+      saveLevel: function() {
+          const levelData = {
+              level: playerLevel,
+              onlineWins: onlineWins,
+              onlineLosses: onlineLosses,
+              totalWins: totalWins,
+              currentXP: currentXP,
+              lastUpdated: new Date().getTime()
+          };
+          
+          // Önce local storage'a kaydet
+          const saved = StorageManager.save('vectoryPathPlayerData', levelData);
+          
+          // Firebase bağlantısı varsa oraya da kaydet
+          if (typeof firebase !== 'undefined' && firebase.database) {
+              updatePlayerData();
+          }
+          
+          return saved;
+      },
+      
+      loadLevel: function() {
+          const data = StorageManager.load('vectoryPathPlayerData');
+          if (data) {
+              playerLevel = parseInt(data.level) || 1;
+              onlineWins = parseInt(data.onlineWins) || 0;
+              onlineLosses = parseInt(data.onlineLosses) || 0;
+              totalWins = parseInt(data.totalWins) || 0;
+              currentXP = parseInt(data.currentXP) || 0;
+              
+              // UI'ı güncelle
+              updateLevelDisplay();
+              updateLevelProgress();
+              return true;
+          }
+          return false;
+      }
+  };
+
+  // Mevcut fonksiyonları güncelle
+  function savePlayerDataToLocalStorage() {
+      return LevelManager.saveLevel();
+  }
+
+  function loadPlayerDataFromLocalStorage() {
+      return LevelManager.loadLevel();
+  }
+
+  // Level up fonksiyonunu güncelle
+  function addXP(isWin) {
+      const oldXP = currentXP;
+      currentXP += isWin ? XP_PER_WIN : XP_PER_LOSS;
+      
+      // Level atlama kontrolü
+      if (currentXP >= maxXP) {
+          currentXP = 0;
+          const oldLevel = playerLevel;
+          playerLevel++;
+          
+          // Level up bildirimini göster
+          showLevelUpNotification();
+          
+          // Verileri kaydet
+          savePlayerDataToLocalStorage();
+          updatePlayerData();
+          
+          // UI'ı hemen güncelle
+          updateLevelDisplay();
+          updateLevelProgress();
+          
+          // Debug için console.log ekle
+          console.log('Level up:', {
+              oldLevel,
+              newLevel: playerLevel,
+              oldXP,
+              newXP: currentXP
+          });
+      } else {
+          // Normal XP kazanımında da UI'ı güncelle
+          updateLevelProgress();
+      }
+  }
+
   // LocalStorage'dan oyuncu verilerini yükle
   function loadPlayerDataFromLocalStorage() {
     try {
@@ -980,18 +1135,42 @@
   }
 
   function updateLevelDisplay() {
-    document.getElementById('playerLevelBadge').textContent = playerLevel;
-    
-    if (isOnlineGame) {
-      if (opponentLevel) {
-        document.getElementById('opponentLevelBadge').style.display = 'flex';
-        document.getElementById('opponentLevelValue').textContent = opponentLevel;
-      } else {
-        document.getElementById('opponentLevelBadge').style.display = 'none';
-      }
-    } else {
-      document.getElementById('opponentLevelBadge').style.display = 'none';
+    // Level badge'i güncelle
+    const playerLevelBadge = document.getElementById('playerLevelBadge');
+    if (playerLevelBadge) {
+        playerLevelBadge.textContent = playerLevel;
+        // Force reflow to ensure update
+        playerLevelBadge.style.display = 'none';
+        playerLevelBadge.offsetHeight; // Force reflow
+        playerLevelBadge.style.display = 'flex';
     }
+    
+    // Current level text'i güncelle
+    const currentLevelElement = document.getElementById('currentLevel');
+    if (currentLevelElement) {
+        currentLevelElement.textContent = playerLevel;
+    }
+    
+    // Opponent level badge'i güncelle
+    if (isOnlineGame) {
+        const opponentLevelBadge = document.getElementById('opponentLevelBadge');
+        const opponentLevelValue = document.getElementById('opponentLevelValue');
+        if (opponentLevelBadge && opponentLevelValue) {
+            if (opponentLevel) {
+                opponentLevelBadge.style.display = 'flex';
+                opponentLevelValue.textContent = opponentLevel;
+            } else {
+                opponentLevelBadge.style.display = 'none';
+            }
+        }
+    }
+    
+    // Debug için console.log ekle
+    console.log('Level display updated:', {
+        playerLevel,
+        badgeElement: playerLevelBadge ? playerLevelBadge.textContent : 'not found',
+        currentLevelElement: currentLevelElement ? currentLevelElement.textContent : 'not found'
+    });
   }
 
   // Level progress variables
@@ -1006,6 +1185,11 @@
     const currentXPElement = document.getElementById('currentXP');
     const maxXPElement = document.getElementById('maxXP');
     
+    if (!progressFill || !currentLevelElement || !currentXPElement || !maxXPElement) {
+        console.error('Level progress elements not found');
+        return;
+    }
+    
     // XP'yi güncelle
     currentXPElement.textContent = currentXP;
     maxXPElement.textContent = maxXP;
@@ -1016,19 +1200,48 @@
     
     // Level'i güncelle
     currentLevelElement.textContent = playerLevel;
+    
+    // Debug için console.log ekle
+    console.log('Level progress updated:', {
+        currentXP,
+        maxXP,
+        progressPercentage,
+        playerLevel
+    });
   }
 
   function addXP(isWin) {
+    const oldXP = currentXP;
     currentXP += isWin ? XP_PER_WIN : XP_PER_LOSS;
+    
     // Level atlama kontrolü
     if (currentXP >= maxXP) {
-      currentXP = 0;
-      playerLevel++;
-      showLevelUpNotification();
-      updatePlayerData();
-      updateLevelDisplay(); // Seviye rozetini de güncelle
+        currentXP = 0;
+        const oldLevel = playerLevel;
+        playerLevel++;
+        
+        // Level up bildirimini göster
+        showLevelUpNotification();
+        
+        // Verileri kaydet
+        savePlayerDataToLocalStorage();
+        updatePlayerData();
+        
+        // UI'ı hemen güncelle
+        updateLevelDisplay();
+        updateLevelProgress();
+        
+        // Debug için console.log ekle
+        console.log('Level up:', {
+            oldLevel,
+            newLevel: playerLevel,
+            oldXP,
+            newXP: currentXP
+        });
+    } else {
+        // Normal XP kazanımında da UI'ı güncelle
+        updateLevelProgress();
     }
-    updateLevelProgress();
   }
 
   // Record win fonksiyonunu güncelle
@@ -1083,11 +1296,22 @@
   function showLevelUpNotification() {
     const levelUpModal = document.createElement('div');
     levelUpModal.className = 'level-up-notification';
-    levelUpModal.innerHTML = `<h4>Level Up!</h4><p>You reached level ${playerLevel}!</p>`;
+    levelUpModal.innerHTML = `
+        <h4>Level Up!</h4>
+        <p>You reached level ${playerLevel}!</p>
+    `;
     document.body.appendChild(levelUpModal);
     
+    // Debug için console.log ekle
+    console.log('Level up notification shown:', playerLevel);
+    
+    // Level badge'i hemen güncelle
+    updateLevelDisplay();
+    
     setTimeout(() => {
-      levelUpModal.remove();
+        levelUpModal.remove();
+        // Notification kaldırıldıktan sonra tekrar güncelle
+        updateLevelDisplay();
     }, 3000);
   }
 
@@ -2192,16 +2416,25 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
   // Sayfa yüklendiğinde
   window.addEventListener('DOMContentLoaded', function() {
-    // Önce localStorage'dan hızlı yükleme yap
-    loadPlayerDataFromLocalStorage();
+    // Mobil cihaz kontrolü
+    if (isMobile) {
+        console.log('Running on mobile device');
+        // Mobil cihazlarda ek optimizasyonlar
+        document.body.classList.add('mobile-device');
+    }
     
-    // Firebase bağlantısını kontrol et ve verileri yükle
-    const connectedRef = database.ref(".info/connected");
-    connectedRef.on("value", (snap) => {
-        if (snap.val() === true) {
-            loadPlayerData();
-        }
-    });
+    // Level verilerini yükle
+    LevelManager.loadLevel();
+    
+    // Firebase bağlantısını kontrol et
+    if (typeof firebase !== 'undefined' && firebase.database) {
+        const connectedRef = database.ref(".info/connected");
+        connectedRef.on("value", (snap) => {
+            if (snap.val() === true) {
+                loadPlayerData();
+            }
+        });
+    }
     
     // Oyunu başlat
     initTutorial();
