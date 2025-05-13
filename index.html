@@ -828,16 +828,17 @@
 
   // LocalStorage'dan oyuncu verilerini yükle
   function loadPlayerDataFromLocalStorage() {
-    const playerData = localStorage.getItem('vectoryPathPlayerData');
-    if (playerData) {
-        try {
+    try {
+        const playerData = localStorage.getItem('vectoryPathPlayerData');
+        if (playerData) {
             const data = JSON.parse(playerData);
             const oldLevel = playerLevel;
             
-            playerLevel = data.level || 1;
-            onlineWins = data.onlineWins || 0;
-            onlineLosses = data.onlineLosses || 0;
-            totalWins = data.totalWins || 0;
+            // Verileri güvenli bir şekilde yükle
+            playerLevel = parseInt(data.level) || 1;
+            onlineWins = parseInt(data.onlineWins) || 0;
+            onlineLosses = parseInt(data.onlineLosses) || 0;
+            totalWins = parseInt(data.totalWins) || 0;
             myPlayerId = data.playerId || myPlayerId;
             
             // Level tutarlılığını kontrol et
@@ -851,24 +852,48 @@
                 }
             }
             
+            // UI'ı güncelle
             updateLevelDisplay();
-        } catch (e) {
-            console.error('Error parsing player data from localStorage', e);
+            updateLevelProgress();
+            
+            // Verileri tekrar kaydet
+            savePlayerDataToLocalStorage();
         }
+    } catch (e) {
+        console.error('Error loading player data from localStorage:', e);
+        // Hata durumunda varsayılan değerleri kullan
+        playerLevel = 1;
+        onlineWins = 0;
+        onlineLosses = 0;
+        totalWins = 0;
     }
   }
 
-  // LocalStorage'a oyuncu verilerini kaydet
   function savePlayerDataToLocalStorage() {
-    const playerData = {
-      playerId: myPlayerId,
-      level: playerLevel,
-      onlineWins: onlineWins,
-      onlineLosses: onlineLosses,
-      totalWins: totalWins,
-      lastUpdated: new Date().toISOString()
-    };
-    localStorage.setItem('vectoryPathPlayerData', JSON.stringify(playerData));
+    try {
+        const playerData = {
+            playerId: myPlayerId,
+            level: playerLevel,
+            onlineWins: onlineWins,
+            onlineLosses: onlineLosses,
+            totalWins: totalWins,
+            lastUpdated: new Date().toISOString()
+        };
+        
+        // Verileri string'e çevir ve kaydet
+        const playerDataString = JSON.stringify(playerData);
+        localStorage.setItem('vectoryPathPlayerData', playerDataString);
+        
+        // Kayıt başarılı mı kontrol et
+        const savedData = localStorage.getItem('vectoryPathPlayerData');
+        if (!savedData) {
+            throw new Error('Failed to save data to localStorage');
+        }
+    } catch (e) {
+        console.error('Error saving player data to localStorage:', e);
+        // Hata durumunda Firebase'e kaydetmeyi dene
+        updatePlayerData();
+    }
   }
 
   // Firebase'den oyuncu verilerini yükle ve localStorage ile senkronize et
@@ -876,72 +901,81 @@
     // Önce localStorage'dan yükle
     loadPlayerDataFromLocalStorage();
     
-    // Sonra Firebase'den yükle ve karşılaştır
-    const playerRef = database.ref(`players/${myPlayerId}`);
-    playerRef.once('value').then(snapshot => {
-        const data = snapshot.val();
-        if (data) {
-            const oldLevel = playerLevel;
-            
-            // Firebase'de daha yeni veri varsa onu kullan
-            const firebaseUpdated = new Date(data.lastPlayed || 0);
-            const localUpdated = new Date(JSON.parse(localStorage.getItem('vectoryPathPlayerData') || '{}').lastUpdated || 0);
-            
-            if (!data.lastPlayed || firebaseUpdated > localUpdated) {
-                playerLevel = data.level || playerLevel;
-                onlineWins = data.onlineWins || onlineWins;
-                onlineLosses = data.onlineLosses || onlineLosses;
-                totalWins = data.totalWins || totalWins;
-                
-                // Level tutarlılığını kontrol et
-                const calculatedLevel = calculateLevel(onlineWins, onlineLosses);
-                if (calculatedLevel !== playerLevel) {
-                    playerLevel = calculatedLevel;
-                    if (calculatedLevel > oldLevel) {
-                        showLevelUpNotification();
-                    } else if (calculatedLevel < oldLevel) {
-                        showLevelDownNotification();
+    // Firebase bağlantısını kontrol et
+    const connectedRef = database.ref(".info/connected");
+    connectedRef.once("value", (snap) => {
+        if (snap.val() === true) {
+            // Firebase'den yükle
+            const playerRef = database.ref(`players/${myPlayerId}`);
+            playerRef.once('value').then(snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    const oldLevel = playerLevel;
+                    
+                    // Firebase'de daha yeni veri varsa onu kullan
+                    const firebaseUpdated = new Date(data.lastPlayed || 0);
+                    const localUpdated = new Date(JSON.parse(localStorage.getItem('vectoryPathPlayerData') || '{}').lastUpdated || 0);
+                    
+                    if (!data.lastPlayed || firebaseUpdated > localUpdated) {
+                        playerLevel = parseInt(data.level) || playerLevel;
+                        onlineWins = parseInt(data.onlineWins) || onlineWins;
+                        onlineLosses = parseInt(data.onlineLosses) || onlineLosses;
+                        totalWins = parseInt(data.totalWins) || totalWins;
+                        
+                        // Level tutarlılığını kontrol et
+                        const calculatedLevel = calculateLevel(onlineWins, onlineLosses);
+                        if (calculatedLevel !== playerLevel) {
+                            playerLevel = calculatedLevel;
+                            if (calculatedLevel > oldLevel) {
+                                showLevelUpNotification();
+                            } else if (calculatedLevel < oldLevel) {
+                                showLevelDownNotification();
+                            }
+                        }
+                        
+                        updateLevelDisplay();
+                        updateLevelProgress();
+                        savePlayerDataToLocalStorage();
+                    } else if (localUpdated > firebaseUpdated) {
+                        // LocalStorage'daki veri daha yeni ise Firebase'i güncelle
+                        updatePlayerData();
                     }
+                } else {
+                    // Firebase'de kayıt yoksa oluştur
+                    playerRef.set({
+                        level: playerLevel,
+                        onlineWins: onlineWins,
+                        onlineLosses: onlineLosses,
+                        totalWins: totalWins,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP,
+                        lastPlayed: firebase.database.ServerValue.TIMESTAMP
+                    });
                 }
-                
-                updateLevelDisplay();
-                savePlayerDataToLocalStorage();
-            } else if (localUpdated > firebaseUpdated) {
-                // LocalStorage'daki veri daha yeni ise Firebase'i güncelle
-                updatePlayerData();
-            }
-        } else {
-            // Firebase'de kayıt yoksa oluştur
-            playerRef.set({
-                level: playerLevel,
-                onlineWins: onlineWins,
-                onlineLosses: onlineLosses,
-                totalWins: totalWins,
-                createdAt: firebase.database.ServerValue.TIMESTAMP,
-                lastPlayed: firebase.database.ServerValue.TIMESTAMP
+            }).catch(error => {
+                console.error("Error loading data from Firebase:", error);
             });
         }
-    }).catch(error => {
-        console.error("Firebase'den veri yüklenirken hata:", error);
     });
   }
 
   function updatePlayerData() {
     // Firebase'e kaydet
     const playerRef = database.ref(`players/${myPlayerId}`);
-    playerRef.set({
-      level: playerLevel,
-      onlineWins: onlineWins,
-      onlineLosses: onlineLosses,
-      totalWins: totalWins,
-      lastPlayed: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      // Başarılı kayıttan sonra localStorage'ı güncelle
-      savePlayerDataToLocalStorage();
+    const playerData = {
+        level: playerLevel,
+        onlineWins: onlineWins,
+        onlineLosses: onlineLosses,
+        totalWins: totalWins,
+        lastPlayed: firebase.database.ServerValue.TIMESTAMP
+    };
+    
+    playerRef.update(playerData).then(() => {
+        // Başarılı kayıttan sonra localStorage'ı güncelle
+        savePlayerDataToLocalStorage();
     }).catch(error => {
-      console.error("Firebase'e veri kaydedilirken hata:", error);
-      // Firebase'e kaydedilemezse sadece localStorage'a kaydet
-      savePlayerDataToLocalStorage();
+        console.error("Error saving data to Firebase:", error);
+        // Firebase'e kaydedilemezse sadece localStorage'a kaydet
+        savePlayerDataToLocalStorage();
     });
   }
 
@@ -1011,8 +1045,15 @@
       showLevelUpNotification();
     }
     
+    // Önce localStorage'a kaydet
+    savePlayerDataToLocalStorage();
+    
+    // Sonra Firebase'e kaydet
     updatePlayerData();
+    
+    // UI'ı güncelle
     updateLevelDisplay();
+    updateLevelProgress();
   }
 
   // Record loss fonksiyonunu güncelle
@@ -1028,8 +1069,15 @@
       showLevelDownNotification();
     }
     
+    // Önce localStorage'a kaydet
+    savePlayerDataToLocalStorage();
+    
+    // Sonra Firebase'e kaydet
     updatePlayerData();
+    
+    // UI'ı güncelle
     updateLevelDisplay();
+    updateLevelProgress();
   }
 
   function showLevelUpNotification() {
@@ -2144,17 +2192,37 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
   // Sayfa yüklendiğinde
   window.addEventListener('DOMContentLoaded', function() {
-    initTutorial();
-    if (modeSelect.value !== 'online') { startGame(); }
-    startGame();
-    setupConnectionMonitoring();
-    
     // Önce localStorage'dan hızlı yükleme yap
     loadPlayerDataFromLocalStorage();
     
-    // Sonra Firebase'den senkronizasyon yap
-    loadPlayerData();
-    updateLevelProgress();
+    // Firebase bağlantısını kontrol et ve verileri yükle
+    const connectedRef = database.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            loadPlayerData();
+        }
+    });
+    
+    // Oyunu başlat
+    initTutorial();
+    if (modeSelect.value !== 'online') { 
+        startGame(); 
+    }
+    
+    // Mobil kontrolleri başlat
+    if ('ontouchstart' in window) {
+        setupTouchControls();
+    }
+    
+    // Ekran boyutuna göre canvas'ı ayarla
+    resizeCanvas();
+    
+    // Periyodik olarak verileri senkronize et
+    setInterval(() => {
+        if (isOnlineGame) {
+            updatePlayerData();
+        }
+    }, 30000); // Her 30 saniyede bir
   });
   
   window.addEventListener('resize', resizeCanvas);
