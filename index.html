@@ -634,6 +634,41 @@
   .bottom-nav {
     z-index: 1000;
   }
+
+  .pulse-animation {
+    animation: pulse 1.5s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  
+  #onlineStatus {
+    transition: all 0.3s ease;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  
+  .player1-badge, .player2-badge {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    margin-left: 10px;
+  }
+  
+  .player1-badge {
+    background-color: #EA4335;
+    color: white;
+  }
+  
+  .player2-badge {
+    background-color: #5e35b1;
+    color: white;
+  }
 </style>
 </head>
 <body>
@@ -1376,12 +1411,21 @@
     drawGrid();
     playMoveSound();
 
-if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
-    startMoveTimer(); // 👈 Hamle sırası bana geçtiyse timer başlat
-  } else {
-    clearInterval(moveTimer); // 👈 Değilse timerı durdur
-    document.getElementById("turnTimer").style.display = 'none';
-  }
+    if (isOnlineGame) {
+        // Sıra durumunu güncelle
+        const isMyTurn = currentPlayer === (playerRole === 'player1' ? 1 : 2);
+        updateOnlineStatus(
+            isMyTurn ? "Make your move!" : "Waiting for opponent...",
+            playerRole
+        );
+        
+        if (isMyTurn) {
+            startMoveTimer();
+        } else {
+            clearInterval(moveTimer);
+            document.getElementById("turnTimer").style.display = 'none';
+        }
+    }
     
     if (isEndPoint(move.to)) {
       endGame(move.player);
@@ -1940,12 +1984,19 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     });
     
     resizeCanvas();
-    updateOnlineStatus(`Game started! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
+    
+    // İlk sıra durumunu güncelle
+    const isMyTurn = currentPlayer === (playerRole === 'player1' ? 1 : 2);
+    updateOnlineStatus(
+        isMyTurn ? "Game started! Make your first move!" : "Game started! Waiting for opponent...",
+        playerRole
+    );
+    
     document.getElementById('leaveGameBtn').style.display = 'block';
 
     // İlk hamle süresini başlat
-    if (currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
-      startMoveTimer();
+    if (isMyTurn) {
+        startMoveTimer();
     }
   }
 
@@ -2049,11 +2100,30 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     const textElement = document.getElementById('gameStatusText');
     const badgeElement = document.getElementById('playerRoleBadge');
     
-    textElement.textContent = text;
-    badgeElement.textContent = role === 'player1' ? 'Player 1' : 'Player 2';
+    // Sıra durumunu belirle
+    const isMyTurn = currentPlayer === (role === 'player1' ? 1 : 2);
+    const turnText = isMyTurn ? "Your Turn" : "Opponent's Turn";
+    
+    // Oyuncu rolünü belirle
+    const roleText = role === 'player1' ? 'Player 1' : 'Player 2';
+    
+    // Durum metnini güncelle
+    textElement.textContent = `${turnText} - ${text}`;
+    
+    // Rozeti güncelle
+    badgeElement.textContent = roleText;
     badgeElement.className = 'badge ' + (role === 'player1' ? 'player1-badge' : 'player2-badge');
     
-    statusElement.style.display = text ? 'block' : 'none';
+    // Durum elementini güncelle
+    statusElement.style.display = 'block';
+    statusElement.className = 'alert ' + (isMyTurn ? 'alert-success' : 'alert-warning');
+    
+    // Animasyon ekle
+    if (isMyTurn) {
+        statusElement.classList.add('pulse-animation');
+    } else {
+        statusElement.classList.remove('pulse-animation');
+    }
   }
 
   function generateGameId() {
