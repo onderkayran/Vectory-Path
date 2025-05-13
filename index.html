@@ -311,6 +311,10 @@
       margin: -10px 0 20px 0;
       position: relative;
       z-index: 100;
+      width: 100%;
+      max-width: 450px;
+      margin-left: auto;
+      margin-right: auto;
     }
     
     .level-badge {
@@ -325,6 +329,7 @@
       position: relative;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       transition: all 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
     }
     
     .player-level {
@@ -348,6 +353,64 @@
       background: rgba(255, 255, 255, 0.9);
       padding: 2px 5px;
       border-radius: 4px;
+      pointer-events: none;
+    }
+
+    /* Level değişim animasyonu */
+    @keyframes levelChange {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    .level-change-animation {
+      animation: levelChange 0.5s ease-in-out;
+    }
+
+    /* Mobil optimizasyonları */
+    @media (max-width: 600px) {
+      .level-display-container {
+        margin: -5px 0 15px 0;
+        padding: 0 10px;
+        position: relative;
+        z-index: 1000;
+      }
+      
+      .level-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+        border-width: 1px;
+        position: relative;
+        z-index: 1001;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+      
+      .level-label {
+        font-size: 0.7rem;
+        top: -15px;
+        padding: 1px 3px;
+        background: rgba(255, 255, 255, 0.95);
+        z-index: 1002;
+      }
+
+      .level-up-notification {
+        width: 90% !important;
+        padding: 15px !important;
+        font-size: 14px !important;
+        max-width: 300px !important;
+        z-index: 2000 !important;
+      }
+
+      .level-up-animation {
+        font-size: 1.1em;
+      }
+
+      .level-change-animation {
+        animation: levelChange 0.5s ease-in-out;
+        transform-origin: center center;
+      }
     }
 
     .level-up-notification {
@@ -1005,75 +1068,90 @@
   }
 
   function updateLevelDisplay() {
-    // Daire içindeki seviye rozeti
+    // Tüm level elementlerini seç
     const levelBadge = document.getElementById('playerLevelBadge');
-    const oldLevel = parseInt(levelBadge.textContent);
-    
-    // Seviye çubuğundaki seviye bilgisi
     const levelText = document.getElementById('currentLevel');
-    
-    // Eğer seviye değiştiyse animasyon ekle
-    if (oldLevel !== playerLevel) {
-        // Seviye rozeti animasyonu
-        levelBadge.classList.add('level-change-animation');
-        setTimeout(() => {
-            levelBadge.classList.remove('level-change-animation');
-        }, 1000);
-        
-        // Seviye çubuğu animasyonu
-        levelText.classList.add('level-change-animation');
-        setTimeout(() => {
-            levelText.classList.remove('level-change-animation');
-        }, 1000);
-
-        // Mobil cihazlarda titreşim efekti
-        if ('vibrate' in navigator) {
-            navigator.vibrate(100);
-        }
-    }
-    
-    // Seviye değerlerini güncelle
-    levelBadge.textContent = playerLevel;
-    levelText.textContent = playerLevel;
-    
-    // XP çubuğunu güncelle
     const progressFill = document.getElementById('levelProgressFill');
     const currentXPElement = document.getElementById('currentXP');
     const maxXPElement = document.getElementById('maxXP');
     
+    // Eski değerleri kaydet
+    const oldLevel = parseInt(levelBadge.textContent);
+    
+    // Yeni değerleri ayarla
+    levelBadge.textContent = playerLevel;
+    levelText.textContent = playerLevel;
+    
+    // XP değerlerini güncelle
     currentXPElement.textContent = currentXP;
     maxXPElement.textContent = maxXP;
     
+    // Progress bar'ı güncelle
     const progressPercentage = (currentXP / maxXP) * 100;
     progressFill.style.width = `${progressPercentage}%`;
     
+    // Level değişimi kontrolü ve animasyon
+    if (oldLevel !== playerLevel) {
+        // Level rozeti animasyonu
+        levelBadge.style.animation = 'none';
+        levelBadge.offsetHeight; // Reflow
+        levelBadge.style.animation = 'levelChange 0.5s ease-in-out';
+        
+        // Level text animasyonu
+        levelText.style.animation = 'none';
+        levelText.offsetHeight; // Reflow
+        levelText.style.animation = 'levelChange 0.5s ease-in-out';
+        
+        // Mobil cihazlarda titreşim
+        if ('vibrate' in navigator) {
+            navigator.vibrate(100);
+        }
+        
+        // Level up bildirimi
+        if (playerLevel > oldLevel) {
+            showLevelUpNotification();
+        } else {
+            showLevelDownNotification();
+        }
+    }
+    
     // Rakip seviyesi gösterimi
     if (isOnlineGame) {
+        const opponentBadge = document.getElementById('opponentLevelBadge');
         if (opponentLevel) {
-            const opponentBadge = document.getElementById('opponentLevelBadge');
             opponentBadge.style.display = 'flex';
-            document.getElementById('opponentLevelValue').textContent = opponentLevel;
+            const opponentLevelValue = document.getElementById('opponentLevelValue');
+            const oldOpponentLevel = parseInt(opponentLevelValue.textContent);
             
-            // Rakip seviyesi değişiminde animasyon
-            if (opponentLevel !== parseInt(document.getElementById('opponentLevelValue').textContent)) {
-                opponentBadge.classList.add('level-change-animation');
-                setTimeout(() => {
-                    opponentBadge.classList.remove('level-change-animation');
-                }, 1000);
+            if (oldOpponentLevel !== opponentLevel) {
+                opponentLevelValue.textContent = opponentLevel;
+                opponentBadge.style.animation = 'none';
+                opponentBadge.offsetHeight; // Reflow
+                opponentBadge.style.animation = 'levelChange 0.5s ease-in-out';
             }
         } else {
-            document.getElementById('opponentLevelBadge').style.display = 'none';
+            opponentBadge.style.display = 'none';
         }
     } else {
         document.getElementById('opponentLevelBadge').style.display = 'none';
     }
-
+    
     // Mobil cihazlarda ekran yenileme
     if (window.innerWidth <= 600) {
-        requestAnimationFrame(() => {
-            levelBadge.style.transform = 'scale(1)';
-            levelText.style.transform = 'scale(1)';
-        });
+        // Force reflow ve yeniden render
+        levelBadge.style.display = 'none';
+        levelBadge.offsetHeight;
+        levelBadge.style.display = 'flex';
+        
+        levelText.style.display = 'none';
+        levelText.offsetHeight;
+        levelText.style.display = 'block';
+        
+        // Mobil için özel animasyon
+        levelBadge.classList.add('level-change-animation');
+        setTimeout(() => {
+            levelBadge.classList.remove('level-change-animation');
+        }, 500);
     }
   }
 
@@ -1149,6 +1227,7 @@
     updateLevelDisplay();
   }
 
+  // Level up bildirimi için yeni fonksiyon
   function showLevelUpNotification() {
     const levelUpModal = document.createElement('div');
     levelUpModal.className = 'level-up-notification';
@@ -1161,10 +1240,20 @@
             <span class="new-level">${playerLevel}</span>
         </div>
     `;
+    
+    // Mobil cihazlar için özel stil
+    if (window.innerWidth <= 600) {
+        levelUpModal.style.width = '90%';
+        levelUpModal.style.padding = '15px';
+        levelUpModal.style.fontSize = '14px';
+    }
+    
     document.body.appendChild(levelUpModal);
     
     // Animasyon ekle
-    levelUpModal.classList.add('fade-in');
+    requestAnimationFrame(() => {
+        levelUpModal.classList.add('fade-in');
+    });
     
     setTimeout(() => {
         levelUpModal.classList.add('fade-out');
