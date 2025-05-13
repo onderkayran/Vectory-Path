@@ -634,41 +634,6 @@
   .bottom-nav {
     z-index: 1000;
   }
-
-  .pulse-animation {
-    animation: pulse 1.5s infinite;
-  }
-  
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-  }
-  
-  #onlineStatus {
-    transition: all 0.3s ease;
-    margin: 10px 0;
-    padding: 10px;
-    border-radius: 5px;
-    font-weight: bold;
-  }
-  
-  .player1-badge, .player2-badge {
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 0.9em;
-    margin-left: 10px;
-  }
-  
-  .player1-badge {
-    background-color: #EA4335;
-    color: white;
-  }
-  
-  .player2-badge {
-    background-color: #5e35b1;
-    color: white;
-  }
 </style>
 </head>
 <body>
@@ -1411,21 +1376,12 @@
     drawGrid();
     playMoveSound();
 
-    if (isOnlineGame) {
-        // Sıra durumunu güncelle
-        const isMyTurn = currentPlayer === (playerRole === 'player1' ? 1 : 2);
-        updateOnlineStatus(
-            isMyTurn ? "Make your move!" : "Waiting for opponent...",
-            playerRole
-        );
-        
-        if (isMyTurn) {
-            startMoveTimer();
-        } else {
-            clearInterval(moveTimer);
-            document.getElementById("turnTimer").style.display = 'none';
-        }
-    }
+if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+    startMoveTimer(); // 👈 Hamle sırası bana geçtiyse timer başlat
+  } else {
+    clearInterval(moveTimer); // 👈 Değilse timerı durdur
+    document.getElementById("turnTimer").style.display = 'none';
+  }
     
     if (isEndPoint(move.to)) {
       endGame(move.player);
@@ -1984,19 +1940,12 @@
     });
     
     resizeCanvas();
-    
-    // İlk sıra durumunu güncelle
-    const isMyTurn = currentPlayer === (playerRole === 'player1' ? 1 : 2);
-    updateOnlineStatus(
-        isMyTurn ? "Game started! Make your first move!" : "Game started! Waiting for opponent...",
-        playerRole
-    );
-    
+    updateOnlineStatus(`Game started! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
     document.getElementById('leaveGameBtn').style.display = 'block';
 
     // İlk hamle süresini başlat
-    if (isMyTurn) {
-        startMoveTimer();
+    if (currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+      startMoveTimer();
     }
   }
 
@@ -2100,30 +2049,11 @@
     const textElement = document.getElementById('gameStatusText');
     const badgeElement = document.getElementById('playerRoleBadge');
     
-    // Sıra durumunu belirle
-    const isMyTurn = currentPlayer === (role === 'player1' ? 1 : 2);
-    const turnText = isMyTurn ? "Your Turn" : "Opponent's Turn";
-    
-    // Oyuncu rolünü belirle
-    const roleText = role === 'player1' ? 'Player 1' : 'Player 2';
-    
-    // Durum metnini güncelle
-    textElement.textContent = `${turnText} - ${text}`;
-    
-    // Rozeti güncelle
-    badgeElement.textContent = roleText;
+    textElement.textContent = text;
+    badgeElement.textContent = role === 'player1' ? 'Player 1' : 'Player 2';
     badgeElement.className = 'badge ' + (role === 'player1' ? 'player1-badge' : 'player2-badge');
     
-    // Durum elementini güncelle
-    statusElement.style.display = 'block';
-    statusElement.className = 'alert ' + (isMyTurn ? 'alert-success' : 'alert-warning');
-    
-    // Animasyon ekle
-    if (isMyTurn) {
-        statusElement.classList.add('pulse-animation');
-    } else {
-        statusElement.classList.remove('pulse-animation');
-    }
+    statusElement.style.display = text ? 'block' : 'none';
   }
 
   function generateGameId() {
@@ -2563,268 +2493,6 @@ canvas.addEventListener("touchstart", function(e) {
     
     // ... existing touch move code ...
   }
-
-  // Bağlantı yönetimi için yeni sistem
-  const ConnectionManager = {
-    isConnected: true,
-    reconnectAttempts: 0,
-    maxReconnectAttempts: 3,
-    reconnectTimeout: null,
-    connectionStatusElement: null,
-
-    init() {
-      this.connectionStatusElement = document.createElement('div');
-      this.connectionStatusElement.className = 'connection-status';
-      this.connectionStatusElement.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 2000;
-        display: none;
-      `;
-      document.body.appendChild(this.connectionStatusElement);
-
-      this.setupConnectionMonitoring();
-    },
-
-    setupConnectionMonitoring() {
-      const connectedRef = database.ref(".info/connected");
-      connectedRef.on("value", (snap) => {
-        const isConnected = snap.val() === true;
-        this.handleConnectionChange(isConnected);
-      });
-    },
-
-    handleConnectionChange(isConnected) {
-      this.isConnected = isConnected;
-      
-      if (isConnected) {
-        this.showStatus('Connected', 'success');
-        this.reconnectAttempts = 0;
-        if (this.reconnectTimeout) {
-          clearTimeout(this.reconnectTimeout);
-          this.reconnectTimeout = null;
-        }
-        this.handleReconnection();
-      } else {
-        this.showStatus('Connection lost. Attempting to reconnect...', 'warning');
-        this.attemptReconnection();
-      }
-    },
-
-    showStatus(message, type) {
-      this.connectionStatusElement.textContent = message;
-      this.connectionStatusElement.style.display = 'block';
-      this.connectionStatusElement.style.backgroundColor = type === 'success' ? '#34A853' : '#FBBC05';
-      this.connectionStatusElement.style.color = 'white';
-    },
-
-    attemptReconnection() {
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        this.showStatus('Connection failed. Please refresh the page.', 'error');
-        return;
-      }
-
-      this.reconnectAttempts++;
-      this.reconnectTimeout = setTimeout(() => {
-        this.showStatus(`Reconnecting... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`, 'warning');
-      }, 1000);
-    },
-
-    handleReconnection() {
-      if (isOnlineGame && currentGameRef) {
-        // Oyun durumunu yeniden senkronize et
-        currentGameRef.once('value').then((snapshot) => {
-          const game = snapshot.val();
-          if (game && game.status === 'playing') {
-            startOnlineGame(game);
-            if (game.moves) {
-              processOnlineMoves(game.moves);
-            }
-          }
-        });
-      }
-    }
-  };
-
-  // Eşleşme sistemi için yeni sınıf
-  const MatchmakingSystem = {
-    isSearching: false,
-    searchTimeout: null,
-    maxSearchTime: 30000, // 30 saniye
-    minSearchTime: 5000,  // 5 saniye
-    currentSearchTime: 0,
-    searchInterval: null,
-
-    startSearch() {
-      if (this.isSearching) return;
-      
-      this.isSearching = true;
-      this.currentSearchTime = this.minSearchTime;
-      this.updateSearchUI(true);
-      
-      // Eşleşme kuyruğuna ekle
-      matchmakingRef = database.ref('matchmaking').push({
-        playerId: myPlayerId,
-        timestamp: firebase.database.ServerValue.TIMESTAMP,
-        config: {
-          gridWidth: parseInt(document.getElementById('gridWidth').value),
-          gridHeight: parseInt(document.getElementById('gridHeight').value),
-          difficulty: document.getElementById('difficultySelect').value
-        },
-        status: 'waiting',
-        level: playerLevel // Oyuncu seviyesini ekle
-      });
-
-      // Eşleşme durumunu dinle
-      this.setupMatchmakingListener();
-      
-      // Arama süresini başlat
-      this.startSearchTimer();
-    },
-
-    stopSearch() {
-      if (!this.isSearching) return;
-      
-      this.isSearching = false;
-      this.updateSearchUI(false);
-      
-      if (matchmakingRef) {
-        matchmakingRef.remove();
-        matchmakingRef = null;
-      }
-      
-      if (this.searchTimeout) {
-        clearTimeout(this.searchTimeout);
-        this.searchTimeout = null;
-      }
-      
-      if (this.searchInterval) {
-        clearInterval(this.searchInterval);
-        this.searchInterval = null;
-      }
-    },
-
-    updateSearchUI(isSearching) {
-      const findMatchBtn = document.getElementById('findMatchBtn');
-      const matchStatus = document.getElementById('matchStatus');
-      const matchStatusText = document.getElementById('matchStatusText');
-      
-      findMatchBtn.disabled = isSearching;
-      findMatchBtn.textContent = isSearching ? 'Cancel Search' : 'Find Match';
-      matchStatus.style.display = isSearching ? 'block' : 'none';
-      matchStatusText.textContent = isSearching ? 'Searching for match...' : '';
-    },
-
-    startSearchTimer() {
-      this.searchTimeout = setTimeout(() => {
-        this.stopSearch();
-        this.showNoMatchFound();
-      }, this.maxSearchTime);
-
-      this.searchInterval = setInterval(() => {
-        this.currentSearchTime += 1000;
-        this.updateSearchProgress();
-      }, 1000);
-    },
-
-    updateSearchProgress() {
-      const progress = (this.currentSearchTime / this.maxSearchTime) * 100;
-      const matchProgress = document.getElementById('matchProgress');
-      if (matchProgress) {
-        matchProgress.style.width = `${progress}%`;
-      }
-    },
-
-    showNoMatchFound() {
-      const matchStatusText = document.getElementById('matchStatusText');
-      matchStatusText.textContent = 'No matches found. Try again.';
-      setTimeout(() => {
-        this.updateSearchUI(false);
-      }, 3000);
-    },
-
-    setupMatchmakingListener() {
-      matchmakingRef.on('value', (snapshot) => {
-        const matchData = snapshot.val();
-        if (!matchData) return;
-        
-        if (matchData.status === 'matched' && matchData.gameId) {
-          this.stopSearch();
-          joinOnlineGame(matchData.gameId, matchData.playerRole);
-        } else if (matchData.status === 'timeout') {
-          this.stopSearch();
-          this.showNoMatchFound();
-        }
-      });
-    },
-
-    findMatch() {
-      database.ref('matchmaking')
-        .orderByChild('status')
-        .equalTo('waiting')
-        .once('value', (snapshot) => {
-          snapshot.forEach((childSnapshot) => {
-            const otherPlayer = childSnapshot.val();
-            
-            if (otherPlayer.playerId !== myPlayerId && 
-                otherPlayer.status === 'waiting' &&
-                Math.abs(otherPlayer.level - playerLevel) <= 2) { // Seviye farkı kontrolü
-              
-              const gameId = generateGameId();
-              const gameRef = database.ref(`games/${gameId}`);
-              
-              gameRef.set({
-                player1: otherPlayer.playerId,
-                player2: myPlayerId,
-                status: 'waiting',
-                config: otherPlayer.config,
-                currentPlayer: 'player1',
-                createdAt: firebase.database.ServerValue.TIMESTAMP,
-                player1Level: otherPlayer.level,
-                player2Level: playerLevel
-              });
-
-              database.ref(`matchmaking/${childSnapshot.key}`).update({
-                gameId: gameId,
-                playerRole: 'player1',
-                status: 'matched'
-              });
-              
-              matchmakingRef.update({
-                gameId: gameId,
-                playerRole: 'player2',
-                status: 'matched'
-              });
-              
-              setTimeout(() => {
-                database.ref(`matchmaking/${childSnapshot.key}`).remove();
-                matchmakingRef.remove();
-              }, 5000);
-              
-              return true;
-            }
-          });
-        });
-    }
-  };
-
-  // Event listener'ları güncelle
-  document.getElementById('findMatchBtn').addEventListener('click', function() {
-    if (MatchmakingSystem.isSearching) {
-      MatchmakingSystem.stopSearch();
-    } else {
-      MatchmakingSystem.startSearch();
-    }
-  });
-
-  // Sayfa yüklendiğinde bağlantı yöneticisini başlat
-  window.addEventListener('DOMContentLoaded', function() {
-    ConnectionManager.init();
-    // ... existing code ...
-  });
 </script>
 </body>
 </html> 
