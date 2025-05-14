@@ -1990,87 +1990,71 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     matchStatusText.textContent = "Searching for match...";
     findMatchBtn.disabled = true;
     
-    // Eşleşme kuyruğuna ekle
-    matchmakingRef = database.ref('matchmaking').push({
-      playerId: myPlayerId,
-      timestamp: firebase.database.ServerValue.TIMESTAMP,
-      config: {
-        gridWidth: parseInt(document.getElementById('gridWidth').value),
-        gridHeight: parseInt(document.getElementById('gridHeight').value),
-        difficulty: document.getElementById('difficultySelect').value
-      },
-      status: 'waiting'
-    });
-
-    // Eşleşme durumunu dinle
-    matchmakingRef.on('value', (snapshot) => {
-      const matchData = snapshot.val();
-      if (!matchData) return;
-      
-      if (matchData.status === 'matched' && matchData.gameId) {
-        // Eşleşme bulundu
-        joinOnlineGame(matchData.gameId, matchData.playerRole);
-      } else if (matchData.status === 'timeout') {
-        // Zaman aşımı
-        matchStatusText.textContent = "No matches found. Try again.";
-        findMatchBtn.disabled = false;
-        matchmakingRef.remove();
-        clearTimeout(matchTimeout);
-      }
-    });
-
-    // Eşleşme bulmaya çalış (30 seconds içinde)
-    matchTimeout = setTimeout(() => {
-      matchmakingRef.transaction((currentData) => {
-        if (currentData && currentData.status === 'waiting') {
-          currentData.status = 'timeout';
-        }
-        return currentData;
-      });
-    }, 30000);
-
-    // Uygun eşleşme ara
+    // Önce mevcut waiting players'ı kontrol et
     database.ref('matchmaking').orderByChild('status').equalTo('waiting').once('value', (snapshot) => {
+      let foundMatch = false;
+      
       snapshot.forEach((childSnapshot) => {
-        const otherPlayer = childSnapshot.val();
+        if (foundMatch) return;
         
-        if (otherPlayer.playerId !== myPlayerId && otherPlayer.status === 'waiting') {
-          // Eşleşme bulundu, oyun oluştur
-          const gameId = generateGameId();
-          const gameRef = database.ref(`games/${gameId}`);
-          
-          // Oyunu başlat (ilk oyuncunun ayarlarını kullan)
-          gameRef.set({
-            player1: otherPlayer.playerId,
-            player2: myPlayerId,
-            status: 'waiting',
-            config: otherPlayer.config,
-            currentPlayer: 'player1',
-            createdAt: firebase.database.ServerValue.TIMESTAMP
+        const otherPlayer = childSnapshot.val();
+        if (otherPlayer.playerId !== myPlayerId) {
+          // Transaction ile atomic update
+          childSnapshot.ref.transaction((currentData) => {
+            if (currentData && currentData.status === 'waiting') {
+              // Bu oyuncuyu eşleştir
+              const gameId = generateGameId();
+              
+              // Game oluştur
+              database.ref(`games/${gameId}`).set({
+                player1: currentData.playerId,
+                player2: myPlayerId,
+                status: 'waiting',
+                config: currentData.config,
+                currentPlayer: 'player1',
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+              });
+              
+              foundMatch = true;
+              joinOnlineGame(gameId, 'player2');
+              
+              return {
+                ...currentData,
+                status: 'matched',
+                gameId: gameId,
+                playerRole: 'player1'
+              };
+            }
+            return undefined; // Transaction iptal
           });
-
-          // Her iki oyuncuya da bilgi ver
-          database.ref(`matchmaking/${childSnapshot.key}`).update({
-            gameId: gameId,
-            playerRole: 'player1',
-            status: 'matched'
-          });
           
-          matchmakingRef.update({
-            gameId: gameId,
-            playerRole: 'player2',
-            status: 'matched'
-          });
-          
-          // Eşleşme kayıtlarını temizle
-          setTimeout(() => {
-            database.ref(`matchmaking/${childSnapshot.key}`).remove();
-            matchmakingRef.remove();
-          }, 5000);
-          
-          return true; // Döngüyü sonlandır
+          return true; // forEach'i durdur
         }
       });
+      
+      // Eğer eşleşme bulunamadıysa, kuyruğa ekle
+      if (!foundMatch) {
+        matchmakingRef = database.ref('matchmaking').push({
+          playerId: myPlayerId,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          config: {
+            gridWidth: parseInt(document.getElementById('gridWidth').value),
+            gridHeight: parseInt(document.getElementById('gridHeight').value),
+            difficulty: document.getElementById('difficultySelect').value
+          },
+          status: 'waiting'
+        });
+        
+        // Eşleşme durumunu dinle
+        matchmakingRef.on('value', (snapshot) => {
+          const matchData = snapshot.val();
+          if (!matchData) return;
+          
+          if (matchData.status === 'matched' && matchData.gameId) {
+            joinOnlineGame(matchData.gameId, matchData.playerRole);
+          }
+        });
+      }
     });
   }
 
