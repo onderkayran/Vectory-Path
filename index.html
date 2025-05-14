@@ -2542,7 +2542,7 @@ canvas.addEventListener("touchstart", function(e) {
 }, { passive: false });
 
   let moveTimer = null;
-  let moveTimeLeft = 20;
+  let gameOver = false; // 👈 oyun bitiş kontrolü
 
   function startMoveTimer() {
     clearInterval(moveTimer);
