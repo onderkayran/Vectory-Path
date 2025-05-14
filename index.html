@@ -2594,7 +2594,7 @@ canvas.addEventListener("touchstart", function(e) {
     timeLeft--;
     document.getElementById("timeLeft").textContent = timeLeft;
 
-      if (moveTimeLeft <= 0) {
+     if (timeLeft <= 0) {
         clearInterval(moveTimer);
         if (isOnlineGame && gameActive) {
           endOnlineGame(playerRole === 'player1' ? 2 : 1);
