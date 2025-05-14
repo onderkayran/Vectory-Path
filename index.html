@@ -2172,7 +2172,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     status: 'finished',
     endedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
-    if ((winner === 1 && playerRole === 'player1') || (winner === 2 && playerRole === 'player2')) {
+     if ((winner === 1 && playerRole === 'player1') || (winner === 2 && playerRole === 'player2')) {
       winnerText.textContent = "Congratulations, You Won!";
       winnerModal.style.display = 'flex';
       playWinSound();
@@ -2206,16 +2206,23 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   }
 
  function cleanupOnlineGame() {
-  if (currentGameRef) currentGameRef.off();
-  if (matchmakingRef) {
+  // Tüm Firebase dinleyicilerini kapat
+  if (currentGameRef) {
+    currentGameRef.off();
+    currentGameRef = null;
+  }
+     if (matchmakingRef) {
     matchmakingRef.off();
     matchmakingRef.remove();
+    matchmakingRef = null;
   }
   clearTimeout(matchTimeout);
   
   isOnlineGame = false;
   playerRole = null;
   opponentLevel = null;
+  hasShownResult = false;
+  gameOver = false;
   updateOnlineStatus('', '');
   findMatchBtn.disabled = false;
   matchStatus.style.display = 'none';
@@ -2498,7 +2505,7 @@ playAgainBtn.addEventListener('click', () => {
   loserModal.style.display = 'none';
   if (modeSelect.value === 'online') {
     cleanupOnlineGame();
-    setTimeout(findOnlineMatch, 300);
+    findOnlineMatch();
   } else {
     startGame();
   }
@@ -2508,7 +2515,7 @@ playAgainBtn.addEventListener('click', () => {
   winnerModal.style.display = 'none';
   loserModal.style.display = 'none';
 
-  if (modeSelect.value === 'online') {
+   if (modeSelect.value === 'online') {
     cleanupOnlineGame();
     findOnlineMatch();
   } else {
