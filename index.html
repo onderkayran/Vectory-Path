@@ -756,6 +756,14 @@
     from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
   }
+
+  @media (max-width: 600px) {
+    .bottom-nav button {
+      // ... existing styles ...
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+  }
 </style>
 </head>
 <body>
