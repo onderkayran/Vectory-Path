@@ -855,7 +855,7 @@
 <h5 class="mt-3">Online Mod:</h5>
 <p>You can play with real players via random matchmaking.</p>
 <h5 class="mt-3">Level System:</h5>
-<p>Every 5 wins increase your level by 1. Every 5 losses decrease your level by 1.</p>
+<p>Every 5 wins increase your level by 1.</p>
 </div>
 </div>
 
@@ -2157,31 +2157,42 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     );
   }
 
-  function endOnlineGame(winner) {
-    if (hasShownResult) return;
-    hasShownResult = true;
-    
-    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
-    
-    currentGameRef.update({ 
-      winner: winner,
-      status: 'finished',
-      endedAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      if (isWinner) {
-        winnerText.textContent = "Congratulations, You Won!";
-        winnerModal.style.display = 'flex';
-        playWinSound();
-        recordWin();
-      } else {
-        loserText.textContent = "Unfortunately, You Lost!";
-        loserModal.style.display = 'flex';
-        playLoseSound();
-        recordLoss();
-      }
-      cleanupOnlineGame();
-    });
-  }
+ function endOnlineGame(winner) {
+  if (hasShownResult) return;
+  hasShownResult = true;
+
+  // Süreyi durdur
+  clearInterval(moveTimer);
+  gameActive = false;
+
+  const isWinner = winner === (playerRole === "player1" ? 1 : 2);
+
+  currentGameRef.update({ 
+    winner: winner,
+    status: 'finished',
+    endedAt: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    if (isWinner) {
+      winnerText.textContent = "Congratulations, You Won!";
+      winnerModal.style.display = 'flex';
+      playWinSound();
+      recordWin();
+    } else {
+      loserText.textContent = "Unfortunately, You Lost!";
+      loserModal.style.display = 'flex';
+      playLoseSound();
+      recordLoss();
+    }
+
+    // Ekranı temizle ve eşleşme ekranına dön
+    document.getElementById("turnTimer").style.display = "none";
+    document.getElementById("leaveGameBtn").style.display = "none";
+    document.getElementById("onlineStatus").style.display = "none";
+    document.getElementById("onlinePanel").style.display = "block";
+
+    cleanupOnlineGame();
+  });
+}
 
   function showOnlineResult(winner) {
     if (hasShownResult) return;
