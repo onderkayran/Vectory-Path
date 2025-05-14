@@ -2722,6 +2722,15 @@ canvas.addEventListener("touchstart", function(e) {
     
     // ... existing touch move code ...
   }
+
+  // Help modal event listener'ları ekle
+  helpButton.addEventListener('click', () => {
+    helpModal.style.display = 'flex';
+  });
+
+  closeModal.addEventListener('click', () => {
+    helpModal.style.display = 'none';
+  });
 </script>
 </body>
 </html> 
