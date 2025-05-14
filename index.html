@@ -59,6 +59,10 @@
       background: linear-gradient(135deg, #e6f7f5 0%, #ffffff 100%);
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
       transition: all 0.3s ease;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     /* Butonlar için yeni stil */
@@ -965,10 +969,11 @@
   const XP_PER_WIN = 20;
   const XP_PER_LOSS = 5;
 
+  // calculateLevel fonksiyonunu güncelle (line 822 civarında)
   function calculateLevel(wins, losses) {
+    // Sadece kazanmaları hesaba kat, kayıplar seviyeyi düşürmesin
     const winPoints = Math.floor(wins / 5);
-    const lossPoints = Math.floor(losses / 5);
-    return Math.max(1, winPoints - lossPoints + 1);
+    return Math.max(1, winPoints + 1);
   }
 
   // LocalStorage'dan oyuncu verilerini yükle
@@ -2554,32 +2559,34 @@ playAgainBtn.addEventListener('click', () => {
   // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
   e.preventDefault();
-
- if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+  
+  if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
   const mx = touch.clientX - rect.left;
   const my = touch.clientY - rect.top;
-
+  
   let minDist = Infinity;
   let closestPoint = null;
-
+  
   for (let y = 0; y < gridH; y++) {
     for (let x = 0; x < gridW; x++) {
       if (isObstacle({x, y})) continue;
+      
       const canvasCoords = toCanvasCoords({x, y});
-      const dist = Math.sqrt((mx - canvasCoords.x) ** 2 + (my - canvasCoords.y) ** 2);
-      if (dist < minDist && dist < 20) {
+      const dist = Math.sqrt(Math.pow(mx - canvasCoords.x, 2) + Math.pow(my - canvasCoords.y, 2));
+      
+      if (dist < minDist && dist < 30) { // Touch area biraz daha büyük
         minDist = dist;
         closestPoint = {x, y};
       }
     }
   }
-
+  
   if (!closestPoint) return;
-
   const clicked = closestPoint;
+  
   const startPoint = { x: 0, y: gridH - 1 };
 
   if (isEndPoint(clicked)) {
