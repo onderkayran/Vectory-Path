@@ -855,7 +855,7 @@
 <h5 class="mt-3">Online Mod:</h5>
 <p>You can play with real players via random matchmaking.</p>
 <h5 class="mt-3">Level System:</h5>
-<p>Every 5 wins increase your level by 1. Every 5 losses decrease your level by 1.</p>
+<p>Every 5 wins increase your level by 1.</p>
 </div>
 </div>
 
@@ -1571,11 +1571,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   }
 
   function endGame(winner) {
-    gameOver = true;
     gameActive = false;
-  
-    clearInterval(moveTimer); // ⛔ süreyi durdur
-  document.getElementById("turnTimer").style.display = "none";
 
     if (isOnlineGame) {
         endOnlineGame(winner);
@@ -2164,10 +2160,10 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   function endOnlineGame(winner) {
     if (hasShownResult) return;
     hasShownResult = true;
-    
+
     gameActive = false;
     gameOver = true;
-
+    
     const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     
     currentGameRef.update({ 
@@ -2495,6 +2491,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     }
   });
   playAgainBtn.addEventListener('click', startGame);
+  if (modeSelect.value === 'online')
   tryAgainBtn.addEventListener('click', startGame);
   helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
   closeModal.addEventListener('click', () => helpModal.style.display = 'none');
@@ -2552,19 +2549,22 @@ canvas.addEventListener("touchstart", function(e) {
   let moveTimer = null;
   let gameOver = false; // 👈 oyun bitiş kontrolü
 
-  function startMoveTimer() {
-    clearInterval(moveTimer);
-    moveTimeLeft = 20;
-    document.getElementById("turnTimer").style.display = 'block';
-    document.getElementById("timeLeft").textContent = moveTimeLeft;
 
-    moveTimer = setInterval(() => {
+  function startMoveTimer() {
+  clearInterval(moveTimer);
+  let timeLeft = 20;
+  document.getElementById("turnTimer").style.display = 'block';
+  document.getElementById("timeLeft").textContent = timeLeft;
+
+  moveTimer = setInterval(() => {
     if (gameOver) {
       clearInterval(moveTimer);
       return;
     }
-      moveTimeLeft--;
-      document.getElementById("timeLeft").textContent = moveTimeLeft;
+
+    timeLeft--;
+    document.getElementById("timeLeft").textContent = timeLeft;
+
       if (moveTimeLeft <= 0) {
         clearInterval(moveTimer);
         if (isOnlineGame && gameActive) {
