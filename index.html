@@ -2345,12 +2345,46 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     startGame();
     setupConnectionMonitoring();
     
+    // Help modal event listener'larını buraya ekleyin
+    helpButton.addEventListener('click', () => {
+      helpModal.style.display = 'flex';
+    });
+
+    // Touch cihazlar için ek olay dinleyicisi
+    helpButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      helpModal.style.display = 'flex';
+    });
+
+    closeModal.addEventListener('click', () => {
+      helpModal.style.display = 'none';
+    });
+
+    closeModal.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      helpModal.style.display = 'none';
+    });
+    
+    // Modal dışına tıklandığında kapatma
+    helpModal.addEventListener('click', (e) => {
+      if (e.target === helpModal) {
+        helpModal.style.display = 'none';
+      }
+    });
+    
     // Önce localStorage'dan hızlı yükleme yap
     loadPlayerDataFromLocalStorage();
     
     // Sonra Firebase'den senkronizasyon yap
     loadPlayerData();
     updateLevelProgress();
+    
+    // Mobil kontrolleri başlat
+    if ('ontouchstart' in window) {
+      setupTouchControls();
+    }
+    
+    // ... existing resize listener code ...
   });
   
   window.addEventListener('resize', resizeCanvas);
