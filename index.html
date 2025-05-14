@@ -2221,7 +2221,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     currentGameRef.off();
     currentGameRef = null;
   }
-     if (matchmakingRef) {
+  if (matchmakingRef) {
     matchmakingRef.off();
     matchmakingRef.remove();
     matchmakingRef = null;
@@ -2238,13 +2238,10 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   matchStatus.style.display = 'none';
   matchProgress.style.display = 'block';
   document.getElementById('leaveGameBtn').style.display = 'none';
-  document.getElementById("turnTimer").style.display = 'none'; // 👈 Timer'ı gizle
-  // Kullanıcıyı yeni oyuna yönlendir:
-  // Otomatik eşleşme:
-  // setTimeout(findOnlineMatch, 300);
-
-  // Veya kullanıcı müdahalesi gerekiyorsa:
-  // Hiçbir şey yapma, sadece UI'yı hazır hale getir.
+  document.getElementById("turnTimer").style.display = 'none';
+  
+  // Rakip badge'ini gizle
+  updateLevelDisplay();
 }
 
   function updateOnlineStatus(text, role) {
