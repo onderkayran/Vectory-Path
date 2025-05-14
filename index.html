@@ -2162,7 +2162,9 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   hasShownResult = true;
   gameActive = false;
   gameOver = true;
-    
+  clearInterval(moveTimer);
+  document.getElementById("turnTimer").style.display = 'none';
+
    if (currentGameRef && playerRole) {
     database.ref("rooms/" + currentGameRef.key + "/players/" + playerRole).onDisconnect().cancel();
   }
@@ -2228,7 +2230,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   matchStatus.style.display = 'none';
   matchProgress.style.display = 'block';
   document.getElementById('leaveGameBtn').style.display = 'none';
-
+  document.getElementById("turnTimer").style.display = 'none'; // 👈 Timer'ı gizle
   // Kullanıcıyı yeni oyuna yönlendir:
   // Otomatik eşleşme:
   // setTimeout(findOnlineMatch, 300);
