@@ -2490,11 +2490,29 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       startGame();
     }
   });
-  playAgainBtn.addEventListener('click', startGame);
-  if (modeSelect.value === 'online')
-  tryAgainBtn.addEventListener('click', startGame);
-  helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
-  closeModal.addEventListener('click', () => helpModal.style.display = 'none');
+ playAgainBtn.addEventListener('click', () => {
+  winnerModal.style.display = 'none';
+  loserModal.style.display = 'none';
+
+  if (modeSelect.value === 'online') {
+    cleanupOnlineGame();       // bağlantıyı kes
+    findOnlineMatch();         // yeni eşleşme başlat
+  } else {
+    startGame();               // offline oyun başlat
+  }
+});
+
+ tryAgainBtn.addEventListener('click', () => {
+  winnerModal.style.display = 'none';
+  loserModal.style.display = 'none';
+
+  if (modeSelect.value === 'online') {
+    cleanupOnlineGame();
+    findOnlineMatch();
+  } else {
+    startGame();
+  }
+});
 
   // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
