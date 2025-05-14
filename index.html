@@ -2544,15 +2544,22 @@ canvas.addEventListener("touchstart", function(e) {
   let moveTimer = null;
   let gameOver = false; // 👈 oyun bitiş kontrolü
 
-  function startMoveTimer() {
-    clearInterval(moveTimer);
-    moveTimeLeft = 20;
-    document.getElementById("turnTimer").style.display = 'block';
-    document.getElementById("timeLeft").textContent = moveTimeLeft;
 
-    moveTimer = setInterval(() => {
-      moveTimeLeft--;
-      document.getElementById("timeLeft").textContent = moveTimeLeft;
+  function startMoveTimer() {
+  clearInterval(moveTimer);
+  let timeLeft = 20;
+  document.getElementById("turnTimer").style.display = 'block';
+  document.getElementById("timeLeft").textContent = timeLeft;
+
+  moveTimer = setInterval(() => {
+    if (gameOver) {
+      clearInterval(moveTimer);
+      return;
+    }
+
+    timeLeft--;
+    document.getElementById("timeLeft").textContent = timeLeft;
+
       if (moveTimeLeft <= 0) {
         clearInterval(moveTimer);
         if (isOnlineGame && gameActive) {
