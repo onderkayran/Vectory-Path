@@ -1126,7 +1126,7 @@
     }
     
     // Rakip seviyesi gösterimi
-    if (isOnlineGame) {
+    if (isOnlineGame && opponentLevel) {
         const opponentBadge = document.getElementById('opponentLevelBadge');
         if (opponentLevel) {
             opponentBadge.style.display = 'flex';
