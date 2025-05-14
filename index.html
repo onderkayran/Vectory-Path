@@ -2165,6 +2165,9 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     if (hasShownResult) return;
     hasShownResult = true;
     
+    gameActive = false;
+    gameOver = true;
+
     const isWinner = winner === (playerRole === "player1" ? 1 : 2);
     
     currentGameRef.update({ 
@@ -2272,6 +2275,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Oyun başlatma
   function startGame() {
     hasShownResult = false;
+    gameOver = false;
 
     const mode = modeSelect.value;
     
