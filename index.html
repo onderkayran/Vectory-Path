@@ -911,6 +911,25 @@
 </div>
 </div>
 
+<!-- Winner/Loser modal'larından sonra, line 2588 civarına ekle -->
+<div class="modal-overlay" id="gameChoiceModal" style="display:none;">
+<div class="modal-content">
+<h4 class="text-primary mb-4">Game Finished!</h4>
+<p class="text-center mb-4">Would you like to play again with your opponent?</p>
+<div class="d-flex gap-3 justify-content-center">
+  <button class="btn btn-success" id="sameGameBtn">
+    <i class="fas fa-redo"></i> Same Game
+  </button>
+  <button class="btn btn-primary" id="newGameBtn">
+    <i class="fas fa-plus"></i> New Game
+  </button>
+</div>
+<div class="mt-3 text-center" id="choiceStatus" style="display:none;">
+  <small class="text-muted">Waiting for opponent's choice...</small>
+</div>
+</div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="firebase-config.js"></script>
@@ -2171,7 +2190,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
   currentGameRef.update({ 
     winner: winner,
-    status: 'finished',
+    status: 'waitingChoice',
     endedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
      if ((winner === 1 && playerRole === 'player1') || (winner === 2 && playerRole === 'player2')) {
@@ -2185,9 +2204,15 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       playLoseSound();
       recordLoss();
     }
-    cleanupOnlineGame();
-    });
-  }
+    
+    // 3 saniye sonra choice modal'ını göster
+    setTimeout(() => {
+      winnerModal.style.display = 'none';
+      loserModal.style.display = 'none';
+      showGameChoiceModal();
+    }, 3000);
+  });
+}
 
   function showOnlineResult(winner) {
     if (hasShownResult) return;
@@ -2211,6 +2236,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Tüm Firebase dinleyicilerini kapat
   if (currentGameRef) {
     currentGameRef.off();
+    currentGameRef.child('playerChoices').off();
     currentGameRef = null;
   }
      if (matchmakingRef) {
@@ -2722,6 +2748,471 @@ canvas.addEventListener("touchstart", function(e) {
     
     // ... existing touch move code ...
   }
+
+  // Yeni fonksiyonları ekle (line 1470 civarına)
+  function showGameChoiceModal() {
+    document.getElementById('gameChoiceModal').style.display = 'flex';
+    document.getElementById('sameGameBtn').disabled = false;
+    document.getElementById('newGameBtn').disabled = false;
+    document.getElementById('choiceStatus').style.display = 'none';
+  }
+
+  function makeGameChoice(choice) {
+    document.getElementById('sameGameBtn').disabled = true;
+    document.getElementById('newGameBtn').disabled = true;
+    document.getElementById('choiceStatus').style.display = 'block';
+    
+    // Firebase'e seçimi kaydet
+    currentGameRef.child('playerChoices').child(playerRole).set(choice);
+    
+    // Listener'ı sadece bir kez ekle ve temizle
+    const choicesRef = currentGameRef.child('playerChoices');
+    choicesRef.on('value', (snapshot) => {
+      const choices = snapshot.val();
+      if (choices && choices.player1 && choices.player2) {
+        // Listener'ı hemen temizle
+        choicesRef.off();
+        processGameChoices(choices);
+      }
+    });
+  }
+
+  function processGameChoices(choices) {
+    const player1Choice = choices.player1;
+    const player2Choice = choices.player2;
+    
+    if (player1Choice === 'same' && player2Choice === 'same') {
+      // Aynı oyun - mevcut sahne ile yeniden başla
+      restartSameGame();
+    } else {
+      // Farklı seçimler - bağlantıyı kapat
+      document.getElementById('gameChoiceModal').style.display = 'none';
+      cleanupOnlineGame();
+      alert('Different game choices selected. Returning to menu.');
+    }
+  }
+
+  function restartSameGame() {
+    document.getElementById('gameChoiceModal').style.display = 'none';
+    
+    // Game state'i reset et ama aynı sahneyi koru
+    edges = [];
+    lastPoint = null;
+    currentPlayer = 1; // Player 1 başlar
+    gameActive = true;
+    gameOver = false;
+    hasShownResult = false;
+    
+    // Engelleri koru (zaten var olan obstacles dizisini kullan)
+    
+    currentGameRef.update({
+      status: 'playing',
+      currentPlayer: 'player1',
+      moves: null, // Eski hamleleri temizle
+      playerChoices: null, // Seçimleri temizle
+      restartedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    
+    drawGrid();
+    updateOnlineStatus(`Game restarted! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
+    
+    // Player 1 ise timer başlat
+    if (currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+      startMoveTimer();
+    }
+  }
+
+  // startMoveTimer fonksiyonunu güncelle (line 2616 civarında)
+  function startMoveTimer() {
+    // Önceki timer'ları temizle
+    clearInterval(moveTimer);
+    
+    // Sadece aktif online oyunda ve kendi sırımızda timer başlat
+    if (!isOnlineGame || !gameActive || gameOver) {
+      return;
+    }
+    
+    // Timer sadece kendi sıramda çalışsın
+    if (currentPlayer !== (playerRole === 'player1' ? 1 : 2)) {
+      return;
+    }
+    
+    let timeLeft = 20;
+    document.getElementById("turnTimer").style.display = 'block';
+    document.getElementById("timeLeft").textContent = timeLeft;
+
+    moveTimer = setInterval(() => {
+      // Her tick'te game state'i kontrol et
+      if (!isOnlineGame || !gameActive || gameOver) {
+        clearInterval(moveTimer);
+        document.getElementById("turnTimer").style.display = 'none';
+        return;
+      }
+      
+      // Artık kendi sıramız değilse timer'ı durdur
+      if (currentPlayer !== (playerRole === 'player1' ? 1 : 2)) {
+        clearInterval(moveTimer);
+        document.getElementById("turnTimer").style.display = 'none';
+        return;
+      }
+
+      timeLeft--;
+      document.getElementById("timeLeft").textContent = timeLeft;
+
+      if (timeLeft <= 0) {
+        clearInterval(moveTimer);
+        document.getElementById("turnTimer").style.display = 'none';
+        
+        // Son kontrol - hala bizim sıramız mı ve oyun aktif mi?
+        if (isOnlineGame && gameActive && !gameOver && 
+            currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+          endOnlineGame(playerRole === 'player1' ? 2 : 1);
+        }
+      }
+    }, 1000);
+  }
+
+  // processMoveLocally fonksiyonunu güncelle (line 1035 civarında)
+  function processMoveLocally(move) {
+    edges.push({
+      from: move.from,
+      to: move.to,
+      player: move.player
+    });
+    
+    lastPoint = move.to;
+    currentPlayer = move.player === 1 ? 2 : 1;
+    drawGrid();
+    playMoveSound();
+
+    // Timer kontrolü - sadece online oyunda
+    if (isOnlineGame) {
+      // Önceki timer'ı temizle
+      clearInterval(moveTimer);
+      document.getElementById("turnTimer").style.display = 'none';
+      
+      // Yeni sıra bizimse timer başlat
+      if (currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+        startMoveTimer();
+      }
+    }
+    
+    if (isEndPoint(move.to)) {
+      endGame(move.player);
+    } else if (!canMove(lastPoint)) {
+      endGame(move.player);
+    }
+  }
+
+  // makeMove fonksiyonunu güncelle (line 1002 civarında)
+  function makeMove(point) {
+    if (!lastPoint) {
+      const start = { x: 0, y: gridH - 1 };
+      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
+    } else {
+      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
+    }
+    if (!gameActive || isLocked(point)) return;
+
+    // Hamle yapıldığında timer'ı temizle
+    if (isOnlineGame) {
+      clearInterval(moveTimer);
+      document.getElementById("turnTimer").style.display = 'none';
+    }
+
+    const move = {
+      from: lastPoint || { x: 0, y: gridH - 1 },
+      to: point,
+      player: currentPlayer
+    };
+
+    // ... rest of existing code ...
+  }
+
+  // findOnlineMatch fonksiyonunu güncelle (line 1204 civarında)
+  function findOnlineMatch() {
+    matchStatus.style.display = 'block';
+    matchStatusText.textContent = "Searching for match...";
+    findMatchBtn.disabled = true;
+    
+    // Eşleşme kuyruğuna atomik şekilde ekle
+    const matchmakingRef = database.ref('matchmaking').push();
+    const matchData = {
+      playerId: myPlayerId,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+      config: {
+        gridWidth: parseInt(document.getElementById('gridWidth').value),
+        gridHeight: parseInt(document.getElementById('gridHeight').value),
+        difficulty: document.getElementById('difficultySelect').value
+      },
+      status: 'waiting'
+    };
+    
+    matchmakingRef.set(matchData).then(() => {
+      // Kendi match'imizi kaydet
+      window.currentMatchRef = matchmakingRef;
+      
+      // Eşleşme durumunu dinle
+      matchmakingRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        
+        if (data.status === 'matched' && data.gameId) {
+          // Eşleşme bulundu
+          joinOnlineGame(data.gameId, data.playerRole);
+          clearTimeout(matchTimeout);
+        } else if (data.status === 'timeout') {
+          // Zaman aşımı
+          matchStatusText.textContent = "No matches found. Try again.";
+          findMatchBtn.disabled = false;
+          matchmakingRef.remove();
+          clearTimeout(matchTimeout);
+        }
+      });
+
+      // Uygun eşleşme ara - atomik transaction ile
+      findAvailableMatch(matchmakingRef);
+      
+      // 30 saniye timeout
+      matchTimeout = setTimeout(() => {
+        matchmakingRef.transaction((currentData) => {
+          if (currentData && currentData.status === 'waiting') {
+            return { ...currentData, status: 'timeout' };
+          }
+          return currentData;
+        });
+      }, 30000);
+    });
+  }
+
+  // Yeni fonksiyon: Atomik match finding
+  function findAvailableMatch(myMatchRef) {
+    database.ref('matchmaking').orderByChild('timestamp').once('value', (snapshot) => {
+      const matches = [];
+      
+      snapshot.forEach((childSnapshot) => {
+        const matchData = childSnapshot.val();
+        const matchKey = childSnapshot.key;
+        
+        // Kendi match'imiz değil ve waiting durumunda
+        if (matchKey !== myMatchRef.key && 
+            matchData.status === 'waiting' && 
+            matchData.playerId !== myPlayerId) {
+          matches.push({ key: matchKey, data: matchData });
+        }
+      });
+      
+      // En eski match'i seç (FIFO)
+      if (matches.length > 0) {
+        const oldestMatch = matches[0];
+        attemptMatchJoin(oldestMatch.key, oldestMatch.data, myMatchRef);
+      }
+    });
+  }
+
+  // Yeni fonksiyon: Atomik match joining
+  function attemptMatchJoin(targetMatchKey, targetMatchData, myMatchRef) {
+    const gameId = generateGameId();
+    const targetMatchRef = database.ref(`matchmaking/${targetMatchKey}`);
+    
+    // Atomik transaction ile match'i claim et
+    targetMatchRef.transaction((currentData) => {
+      if (!currentData || currentData.status !== 'waiting') {
+        // Match artık uygun değil
+        return currentData;
+      }
+      
+      // Match'i başarıyla claim ettik
+      return {
+        ...currentData,
+        status: 'matched',
+        gameId: gameId,
+        playerRole: 'player1',
+        player2: myPlayerId
+      };
+    }).then((result) => {
+      if (result.committed) {
+        // Başarıyla match oluşturduk, oyunu başlat
+        createOnlineGame(gameId, targetMatchData.playerId, myPlayerId, targetMatchData.config);
+        
+        // Kendi match'imizi güncelle
+        myMatchRef.update({
+          status: 'matched',
+          gameId: gameId,
+          playerRole: 'player2'
+        });
+        
+        // Match kayıtlarını temizle
+        setTimeout(() => {
+          targetMatchRef.remove();
+          myMatchRef.remove();
+        }, 5000);
+      } else {
+        // Match zaten alınmış, başka match ara
+        setTimeout(() => findAvailableMatch(myMatchRef), 1000);
+      }
+    });
+  }
+
+  // Yeni fonksiyon: Güvenli game creation
+  function createOnlineGame(gameId, player1Id, player2Id, config) {
+    const gameRef = database.ref(`games/${gameId}`);
+    
+    gameRef.set({
+      player1: player1Id,
+      player2: player2Id,
+      status: 'waiting',
+      config: config,
+      currentPlayer: 'player1',
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      // Game'e lock ekle
+      locked: false
+    });
+  }
+
+  // joinOnlineGame fonksiyonunu güncelle - double join önleme
+  function joinOnlineGame(gameId, role) {
+    playerRole = role;
+    currentGameRef = database.ref(`games/${gameId}`);
+    
+    matchStatusText.textContent = `Match found! Game ID: ${gameId}`;
+    matchProgress.style.display = 'none';
+    
+    // Game lock kontrolü ekle
+    currentGameRef.transaction((gameData) => {
+      if (!gameData) return gameData;
+      
+      if (gameData.locked) {
+        // Oyun zaten başlamış
+        return gameData;
+      }
+      
+      return { ...gameData, locked: true };
+    }).then((result) => {
+      if (result.committed) {
+        // Oyunu başarıyla lock'ladık
+        currentGameRef.on('value', handleGameUpdate);
+      } else {
+        // Oyun zaten lock'lu
+        alert('Game already in progress');
+        cleanupOnlineGame();
+      }
+    });
+  }
+
+  // Game update handler - ayrı fonksiyon
+  function handleGameUpdate(snapshot) {
+    const game = snapshot.val();
+    if (!game) return;
+    
+    if (game.status === 'playing' && (!game.obstacles || Object.keys(game.obstacles).length === 0)) {
+      return;
+    }
+
+    startOnlineGame(game);
+
+    if (game.moves) {
+      processOnlineMoves(game.moves);
+    }
+
+    if (game.winner && !hasShownResult) {
+      endOnlineGame(game.winner);
+    }
+  }
+
+  // startOnlineGame'e güvenli timer başlatma ekle (line 1304 civarında) 
+  function startOnlineGame(gameData) {
+    edges = [];
+    lastPoint = null;
+    isOnlineGame = true;
+    gameActive = true;
+    
+    gridW = gameData.config.gridWidth;
+    gridH = gameData.config.gridHeight;
+    difficultySelect.value = gameData.config.difficulty;
+    
+    document.getElementById('gridWidth').value = gridW;
+    document.getElementById('gridHeight').value = gridH;
+    
+    obstacles = gameData.obstacles || [];
+    
+    currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
+    
+    // Rakip seviyesini yükle
+    const opponentId = playerRole === 'player1' ? gameData.player2 : gameData.player1;
+    database.ref(`players/${opponentId}`).once('value').then(snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        opponentLevel = data.level || 1;
+        updateLevelDisplay();
+      }
+    });
+    
+    resizeCanvas();
+    updateOnlineStatus(`Game started! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
+    document.getElementById('leaveGameBtn').style.display = 'block';
+
+    // İlk hamle süresini güvenli şekilde başlat
+    setTimeout(() => {
+      if (currentPlayer === (playerRole === 'player1' ? 1 : 2) && gameActive && !gameOver) {
+        startMoveTimer();
+      }
+    }, 1000); // 1 saniye bekle ki oyun tam yüklensin
+  }
+
+  // cleanupOnlineGame'e match cleanup ekle
+  function cleanupOnlineGame() {
+    // Tüm Firebase dinleyicilerini kapat
+    if (currentGameRef) {
+      currentGameRef.off();
+      currentGameRef.child('playerChoices').off();
+      currentGameRef = null;
+    }
+    
+    // Match ref'ini de temizle
+    if (window.currentMatchRef) {
+      window.currentMatchRef.off();
+      window.currentMatchRef.remove();
+      window.currentMatchRef = null;
+    }
+    
+    clearTimeout(matchTimeout);
+    
+    isOnlineGame = false;
+    playerRole = null;
+    opponentLevel = null;
+    hasShownResult = false;
+    gameOver = false;
+    updateOnlineStatus('', '');
+    findMatchBtn.disabled = false;
+    matchStatus.style.display = 'none';
+    matchProgress.style.display = 'block';
+    document.getElementById('leaveGameBtn').style.display = 'none';
+    document.getElementById("turnTimer").style.display = 'none';
+    
+    // Choice modal'ını da gizle
+    document.getElementById('gameChoiceModal').style.display = 'none';
+  }
+
+  // Event listener'ları ekle (line 2685 civarına)
+  document.getElementById('sameGameBtn').addEventListener('click', () => {
+    makeGameChoice('same');
+  });
+
+  document.getElementById('newGameBtn').addEventListener('click', () => {
+    makeGameChoice('new');
+  });
+
+  // ... existing event listeners ...
+
+  // Diğer event listener'lar kısmında (line 2685 civarında)
+  helpButton.addEventListener('click', () => {
+    helpModal.style.display = 'flex';
+  });
+
+  closeModal.addEventListener('click', () => {
+    helpModal.style.display = 'none';
+  });
 </script>
 </body>
 </html> 
