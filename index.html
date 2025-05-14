@@ -855,7 +855,7 @@
 <h5 class="mt-3">Online Mod:</h5>
 <p>You can play with real players via random matchmaking.</p>
 <h5 class="mt-3">Level System:</h5>
-<p>Every 5 wins increase your level by 1. Every 5 losses decrease your level by 1.</p>
+<p>Every 5 wins increase your level by 1.</p>
 </div>
 </div>
 
@@ -2087,7 +2087,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       }
 
       if (game.winner && !hasShownResult) {
-        showOnlineResult(game.winner);
+      endOnlineGame(game.winner);
       }
     });
   }
@@ -2158,28 +2158,32 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   }
 
   function endOnlineGame(winner) {
-    if (hasShownResult) return;
-    hasShownResult = true;
+  if (hasShownResult) return;
+  hasShownResult = true;
+  gameActive = false;
+  gameOver = true;
     
-    const isWinner = winner === (playerRole === "player1" ? 1 : 2);
-    
-    currentGameRef.update({ 
-      winner: winner,
-      status: 'finished',
-      endedAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      if (isWinner) {
-        winnerText.textContent = "Congratulations, You Won!";
-        winnerModal.style.display = 'flex';
-        playWinSound();
-        recordWin();
-      } else {
-        loserText.textContent = "Unfortunately, You Lost!";
-        loserModal.style.display = 'flex';
-        playLoseSound();
-        recordLoss();
-      }
-      cleanupOnlineGame();
+   if (currentGameRef && playerRole) {
+    database.ref("rooms/" + currentGameRef.key + "/players/" + playerRole).onDisconnect().cancel();
+  }
+
+  currentGameRef.update({ 
+    winner: winner,
+    status: 'finished',
+    endedAt: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    if ((winner === 1 && playerRole === 'player1') || (winner === 2 && playerRole === 'player2')) {
+      winnerText.textContent = "Congratulations, You Won!";
+      winnerModal.style.display = 'flex';
+      playWinSound();
+      recordWin();
+    } else {
+      loserText.textContent = "Unfortunately, You Lost!";
+      loserModal.style.display = 'flex';
+      playLoseSound();
+      recordLoss();
+    }
+    cleanupOnlineGame();
     });
   }
 
@@ -2201,28 +2205,30 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     cleanupOnlineGame();
   }
 
-  function cleanupOnlineGame() {
-    if (currentGameRef) {
-      currentGameRef.off();
-      currentGameRef = null;
-    }
-    if (matchmakingRef) {
-      matchmakingRef.off();
-      matchmakingRef.remove();
-      matchmakingRef = null;
-    }
-    if (matchTimeout) {
-      clearTimeout(matchTimeout);
-    }
-    isOnlineGame = false;
-    playerRole = null;
-    opponentLevel = null;
-    updateOnlineStatus('', '');
-    findMatchBtn.disabled = false;
-    matchStatus.style.display = 'none';
-    matchProgress.style.display = 'block';
-    document.getElementById('leaveGameBtn').style.display = 'none';
+ function cleanupOnlineGame() {
+  if (currentGameRef) currentGameRef.off();
+  if (matchmakingRef) {
+    matchmakingRef.off();
+    matchmakingRef.remove();
   }
+  clearTimeout(matchTimeout);
+  
+  isOnlineGame = false;
+  playerRole = null;
+  opponentLevel = null;
+  updateOnlineStatus('', '');
+  findMatchBtn.disabled = false;
+  matchStatus.style.display = 'none';
+  matchProgress.style.display = 'block';
+  document.getElementById('leaveGameBtn').style.display = 'none';
+
+  // Kullanıcıyı yeni oyuna yönlendir:
+  // Otomatik eşleşme:
+  // setTimeout(findOnlineMatch, 300);
+
+  // Veya kullanıcı müdahalesi gerekiyorsa:
+  // Hiçbir şey yapma, sadece UI'yı hazır hale getir.
+}
 
   function updateOnlineStatus(text, role) {
     const statusElement = document.getElementById('onlineStatus');
@@ -2268,6 +2274,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Oyun başlatma
   function startGame() {
     hasShownResult = false;
+    gameOver = false;
 
     const mode = modeSelect.value;
     
@@ -2486,10 +2493,28 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       startGame();
     }
   });
-  playAgainBtn.addEventListener('click', startGame);
-  tryAgainBtn.addEventListener('click', startGame);
-  helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
-  closeModal.addEventListener('click', () => helpModal.style.display = 'none');
+playAgainBtn.addEventListener('click', () => {
+  winnerModal.style.display = 'none';
+  loserModal.style.display = 'none';
+  if (modeSelect.value === 'online') {
+    cleanupOnlineGame();
+    setTimeout(findOnlineMatch, 300);
+  } else {
+    startGame();
+  }
+});
+
+ tryAgainBtn.addEventListener('click', () => {
+  winnerModal.style.display = 'none';
+  loserModal.style.display = 'none';
+
+  if (modeSelect.value === 'online') {
+    cleanupOnlineGame();
+    findOnlineMatch();
+  } else {
+    startGame();
+  }
+});
 
   // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
@@ -2542,17 +2567,24 @@ canvas.addEventListener("touchstart", function(e) {
 }, { passive: false });
 
   let moveTimer = null;
-  let moveTimeLeft = 20;
+  let gameOver = false; // 👈 oyun bitiş kontrolü
+
 
   function startMoveTimer() {
-    clearInterval(moveTimer);
-    moveTimeLeft = 20;
-    document.getElementById("turnTimer").style.display = 'block';
-    document.getElementById("timeLeft").textContent = moveTimeLeft;
+  clearInterval(moveTimer);
+  let timeLeft = 20;
+  document.getElementById("turnTimer").style.display = 'block';
+  document.getElementById("timeLeft").textContent = timeLeft;
 
-    moveTimer = setInterval(() => {
-      moveTimeLeft--;
-      document.getElementById("timeLeft").textContent = moveTimeLeft;
+  moveTimer = setInterval(() => {
+    if (gameOver) {
+      clearInterval(moveTimer);
+      return;
+    }
+
+    timeLeft--;
+    document.getElementById("timeLeft").textContent = timeLeft;
+
       if (moveTimeLeft <= 0) {
         clearInterval(moveTimer);
         if (isOnlineGame && gameActive) {
