@@ -1016,7 +1016,7 @@
             const firebaseUpdated = new Date(data.lastPlayed || 0);
             const localUpdated = new Date(JSON.parse(localStorage.getItem('vectoryPathPlayerData') || '{}').lastUpdated || 0);
             
-            if (!data.lastPlayed || (firebaseUpdated && firebaseUpdated.getTime() >= localUpdated.getTime())) 
+            if (!data.lastPlayed || firebaseUpdated > localUpdated) {
                 playerLevel = data.level || playerLevel;
                 currentXP = data.currentXP || currentXP;
                 onlineWins = data.onlineWins || onlineWins;
@@ -1066,7 +1066,7 @@
       onlineWins: onlineWins,
       onlineLosses: onlineLosses,
       totalWins: totalWins,
-      lastPlayed: now
+      lastPlayed: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
       // Başarılı kayıttan sonra localStorage'ı güncelle
       savePlayerDataToLocalStorage();
