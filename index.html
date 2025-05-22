@@ -2078,14 +2078,20 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   function joinOnlineGame(gameId, role) {
     playerRole = role;
     currentGameRef = database.ref(`games/${gameId}`);
-    
+
     matchStatusText.textContent = `Match found! Game ID: ${gameId}`;
     matchProgress.style.display = 'none';
-    
-    currentGameRef.on('value', (snapshot) => {
+
+    currentGameRef.once('value').then((snapshot) => {
       const game = snapshot.val();
       if (!game) return;
-      if (game.status === 'playing' && (!game.obstacles || Object.keys(game.obstacles).length === 0)) {
+
+      // Rakip oyuncu var mı kontrolü
+      const opponentId = playerRole === 'player1' ? game.player2 : game.player1;
+      if (!opponentId || opponentId === myPlayerId) {
+        // Rakip yoksa veya kendinle eşleştiysen, bu eşleşmeyi iptal et
+        alert("No real opponent found. Please try again.");
+        cleanupOnlineGame();
         return;
       }
 
@@ -2096,7 +2102,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       }
 
       if (game.winner && !hasShownResult) {
-      endOnlineGame(game.winner);
+        endOnlineGame(game.winner);
       }
     });
   }
