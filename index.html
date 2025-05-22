@@ -1016,7 +1016,7 @@
             const firebaseUpdated = new Date(data.lastPlayed || 0);
             const localUpdated = new Date(JSON.parse(localStorage.getItem('vectoryPathPlayerData') || '{}').lastUpdated || 0);
             
-            if (!data.lastPlayed || firebaseUpdated > localUpdated) {
+             if (!data.lastPlayed || firebaseUpdated.getTime() >= localUpdated.getTime()) {
                 playerLevel = data.level || playerLevel;
                 currentXP = data.currentXP || currentXP;
                 onlineWins = data.onlineWins || onlineWins;
@@ -1059,6 +1059,7 @@
 
   function updatePlayerData() {
     // Firebase'e kaydet
+    const now = new Date().toISOString();
     const playerRef = database.ref(`players/${myPlayerId}`);
     playerRef.set({
       level: playerLevel,
@@ -1066,7 +1067,7 @@
       onlineWins: onlineWins,
       onlineLosses: onlineLosses,
       totalWins: totalWins,
-      lastPlayed: firebase.database.ServerValue.TIMESTAMP
+      lastPlayed: now
     }).then(() => {
       // Başarılı kayıttan sonra localStorage'ı güncelle
       savePlayerDataToLocalStorage();
