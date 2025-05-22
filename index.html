@@ -1333,8 +1333,11 @@
     }
     
     // Online oyunda engelleri paylaş
-    if (isOnlineGame && playerRole === 'player1' && currentGameRef) {
-      currentGameRef.update({ 
+   if (isOnlineGame && playerRole === 'player1') {
+      currentGameRef.once('value').then(snapshot => {
+    const data = snapshot.val();
+    if (data && data.player1 && data.player2) {
+      currentGameRef.update({
         obstacles: obstacles,
         status: 'playing'
       });
