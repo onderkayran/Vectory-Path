@@ -1584,6 +1584,9 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
     if (isOnlineGame && currentGameRef) {
         currentGameRef.update({ status: 'finished' });
+        const matchId = currentGameRef.key;
+    const matchmakingRef = firebase.database().ref('matchmaking/' + matchId);
+    matchmakingRef.update({ status: 'finished' });
     }
 
     if (isOnlineGame) {
