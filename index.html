@@ -1582,6 +1582,10 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   function endGame(winner) {
     gameActive = false;
 
+    if (isOnlineGame && currentGameRef) {
+        currentGameRef.update({ status: 'finished' });
+    }
+
     if (isOnlineGame) {
         endOnlineGame(winner);
     } else {
