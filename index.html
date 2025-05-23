@@ -1987,6 +1987,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
   // Online oyun fonksiyonları
   function findOnlineMatch() {
+    cleanupOnlineGame();
     matchStatus.style.display = 'block';
     matchStatusText.textContent = "Searching for match...";
     findMatchBtn.disabled = true;
