@@ -1994,6 +1994,24 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
   // Online oyun fonksiyonları
   function findOnlineMatch() {
+    // Eski referansları ve dinleyicileri temizle
+    if (currentGameRef) {
+      currentGameRef.off();
+      currentGameRef.remove(); // Firebase'den sil
+      currentGameRef = null;
+    }
+    if (matchmakingRef) {
+      matchmakingRef.off();
+      matchmakingRef.remove(); // Firebase'den sil
+      matchmakingRef = null;
+    }
+    clearTimeout(matchTimeout);
+    hasShownResult = false;
+    gameOver = false;
+    isOnlineGame = false;
+    playerRole = null;
+    opponentLevel = null;
+
     matchStatus.style.display = 'block';
     matchStatusText.textContent = "Searching for match...";
     findMatchBtn.disabled = true;
@@ -2242,11 +2260,12 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Tüm Firebase dinleyicilerini kapat
   if (currentGameRef) {
     currentGameRef.off();
+    currentGameRef.remove(); // Firebase'den sil
     currentGameRef = null;
   }
   if (matchmakingRef) {
     matchmakingRef.off();
-    matchmakingRef.remove();
+    matchmakingRef.remove(); // Firebase'den sil
     matchmakingRef = null;
   }
   clearTimeout(matchTimeout);
