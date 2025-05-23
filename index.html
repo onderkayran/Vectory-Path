@@ -2174,6 +2174,21 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   clearInterval(moveTimer);
   document.getElementById("turnTimer").style.display = 'none';
 
+ if (currentGameRef) {
+    currentGameRef.update({
+      status: 'ended',
+      winner: winner,
+      endedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      currentGameRef.remove(); // eşleşmeyi sil
+      if (matchmakingRef) matchmakingRef.remove(); // eşleşme kuyruğunu sil
+      currentGameRef = null;
+      matchmakingRef = null;
+    }).catch(error => {
+      console.error("Oyun sonlandırılırken hata oluştu:", error);
+    });
+  }
+
    if (currentGameRef && playerRole) {
     database.ref("rooms/" + currentGameRef.key + "/players/" + playerRole).onDisconnect().cancel();
   }
