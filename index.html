@@ -2819,6 +2819,14 @@ canvas.addEventListener("touchstart", function(e) {
   closeModal.addEventListener('click', () => {
     helpModal.style.display = 'none';
   });
+
+  // Eğer updateLevelProgress fonksiyonu yoksa, aşağıya ekle:
+  if (typeof updateLevelProgress !== 'function') {
+    function updateLevelProgress() {
+      // XP barı veya seviye ilerlemesi için placeholder
+      // Geliştirmek istersen burayı doldurabilirsin
+    }
+  }
 </script>
 </body>
 </html> 
