@@ -1523,10 +1523,6 @@
 
   // Hamle yap
   function makeMove(point) {
-    if (processingMove) return;
-    if (!gameActive || (modeSelect.value === 'robot' && currentPlayer !== 1)) return;
-    processingMove = true;
-
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
       if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
@@ -1555,8 +1551,6 @@
     }
     
     processMoveLocally(move);
-    // Hamle işlendikten sonra flag'i sıfırla
-    setTimeout(() => { processingMove = false; }, 0);
   }
 
   function processMoveLocally(move) {
@@ -2885,8 +2879,6 @@ canvas.addEventListener("touchstart", function(e) {
       // Geliştirmek istersen burayı doldurabilirsin
     }
   }
-
-  let processingMove = false;
 </script>
 </body>
 </html> 
