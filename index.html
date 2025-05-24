@@ -1523,8 +1523,9 @@
 
   // Hamle yap
   function makeMove(point) {
-    // Sadece kendi sıramda hamle yapabilmem için kontrol ekle
+    if (processingMove) return;
     if (!gameActive || (modeSelect.value === 'robot' && currentPlayer !== 1)) return;
+    processingMove = true;
 
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
@@ -1554,6 +1555,8 @@
     }
     
     processMoveLocally(move);
+    // Hamle işlendikten sonra flag'i sıfırla
+    setTimeout(() => { processingMove = false; }, 0);
   }
 
   function processMoveLocally(move) {
@@ -2882,6 +2885,8 @@ canvas.addEventListener("touchstart", function(e) {
       // Geliştirmek istersen burayı doldurabilirsin
     }
   }
+
+  let processingMove = false;
 </script>
 </body>
 </html> 
