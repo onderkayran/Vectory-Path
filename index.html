@@ -2030,10 +2030,18 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     snapshot.forEach(child => {
       child.ref.remove();
     });
+    // Kendi playerId'niz ile ilgili eski oyun kayıtlarını sil
+    const gamesSnapshot = await database.ref('games').once('value');
+    gamesSnapshot.forEach(child => {
+      const game = child.val();
+      if (game.player1 === myPlayerId || game.player2 === myPlayerId) {
+        child.ref.remove();
+      }
+    });
   }
 
   async function findOnlineMatch() {
-    await cleanUpOldMatches();
+    await cleanUpOldMatches(); // <-- Temizlik fonksiyonu ilk satırda
     clearTimeout(matchTimeout);
     hasShownResult = false;
     gameOver = false;
