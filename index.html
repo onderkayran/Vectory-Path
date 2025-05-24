@@ -1654,7 +1654,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     // Diğer zorluk seviyeleri için mevcut stratejiler
     // 1. Öncelik: Oyuncuyu hamlesiz bırakarak kazanma
     const blockingMoves = findBlockingMoves();
-    if (blockingMoves.length > 0 && (difficulty === 'hard' || difficulty === 'expert')) {
+    if (blockingMoves.length > 0 && difficulty === 'expert') {
         makeMove(blockingMoves[0]);
         return;
     }
