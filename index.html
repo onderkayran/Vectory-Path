@@ -759,7 +759,7 @@
 
   @media (max-width: 600px) {
     .bottom-nav button {
-      /* ... existing styles ... */
+      // ... existing styles ...
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
@@ -1654,7 +1654,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     // Diğer zorluk seviyeleri için mevcut stratejiler
     // 1. Öncelik: Oyuncuyu hamlesiz bırakarak kazanma
     const blockingMoves = findBlockingMoves();
-    if (blockingMoves.length > 0 && difficulty === 'expert') {
+    if (blockingMoves.length > 0 && (difficulty === 'hard' || difficulty === 'expert')) {
         makeMove(blockingMoves[0]);
         return;
     }
@@ -1888,8 +1888,12 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
           const next = { x: nx, y: ny };
           if (!edgeExists(lastPoint, next) && !isObstacle(next)) {
+            // Robot bu hamleyi yaparsa, oyuncunun hamle yapıp yapamayacağını kontrol et
             const tempEdges = [...edges, {from: lastPoint, to: next, player: 2}];
-            if (!canMove(next)) {
+            // Oyuncunun yeni noktası:
+            const playerNext = next;
+            // Oyuncunun bu noktadan hamle yapıp yapamayacağını kontrol et
+            if (!canPlayerMove(playerNext, tempEdges)) {
               blockingMoves.push(next);
             }
           }
@@ -1897,6 +1901,24 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       }
     }
     return blockingMoves;
+  }
+
+  // Yeni fonksiyon: Oyuncu bu noktadan hamle yapabiliyor mu?
+  function canPlayerMove(point, tempEdges) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = point.x + dx;
+        const ny = point.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
+          const next = { x: nx, y: ny };
+          if (!edgeExists(point, next, tempEdges) && !isObstacle(next)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   function findPath(from, to) {
@@ -1993,18 +2015,25 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   });
 
   // Online oyun fonksiyonları
-  function findOnlineMatch() {
-    // Eski referansları ve dinleyicileri temizle
+  async function cleanUpOldMatches() {
+    // Eski oyun referanslarını temizle
     if (currentGameRef) {
-      currentGameRef.off();
-      currentGameRef.remove(); // Firebase'den sil
+      try { await currentGameRef.remove(); } catch (e) {}
       currentGameRef = null;
     }
     if (matchmakingRef) {
-      matchmakingRef.off();
-      matchmakingRef.remove(); // Firebase'den sil
+      try { await matchmakingRef.remove(); } catch (e) {}
       matchmakingRef = null;
     }
+    // Kendi playerId'niz ile ilgili eski matchmaking kayıtlarını sil
+    const snapshot = await database.ref('matchmaking').orderByChild('playerId').equalTo(myPlayerId).once('value');
+    snapshot.forEach(child => {
+      child.ref.remove();
+    });
+  }
+
+  async function findOnlineMatch() {
+    await cleanUpOldMatches();
     clearTimeout(matchTimeout);
     hasShownResult = false;
     gameOver = false;
@@ -2812,6 +2841,14 @@ canvas.addEventListener("touchstart", function(e) {
   closeModal.addEventListener('click', () => {
     helpModal.style.display = 'none';
   });
+
+  // Eğer updateLevelProgress fonksiyonu yoksa, aşağıya ekle:
+  if (typeof updateLevelProgress !== 'function') {
+    function updateLevelProgress() {
+      // XP barı veya seviye ilerlemesi için placeholder
+      // Geliştirmek istersen burayı doldurabilirsin
+    }
+  }
 </script>
 </body>
 </html> 
