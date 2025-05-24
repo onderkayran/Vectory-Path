@@ -1523,13 +1523,24 @@
 
   // Hamle yap
   function makeMove(point) {
+    if (isMoveInProgress || !gameActive) return;
+    isMoveInProgress = true;
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
-      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
+      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) {
+        isMoveInProgress = false;
+        return;
+      }
     } else {
-      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
+      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) {
+        isMoveInProgress = false;
+        return;
+      }
     }
-    if (!gameActive || isLocked(point)) return;
+    if (!gameActive || isLocked(point)) {
+      isMoveInProgress = false;
+      return;
+    }
 
     const move = {
       from: lastPoint || { x: 0, y: gridH - 1 },
@@ -1574,8 +1585,12 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     
     if (isEndPoint(move.to)) {
       endGame(move.player);
+      isMoveInProgress = false;
     } else if (!canMove(lastPoint)) {
       endGame(move.player);
+      isMoveInProgress = false;
+    } else {
+      isMoveInProgress = false;
     }
   }
 
@@ -1967,7 +1982,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
   // Tıklama işleyici
   canvas.addEventListener("click", function(e) {
-    if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+    if (isMoveInProgress || !gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -2638,8 +2653,7 @@ playAgainBtn.addEventListener('click', () => {
   // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
   e.preventDefault();
-
- if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+  if (isMoveInProgress || !gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
@@ -2849,6 +2863,8 @@ canvas.addEventListener("touchstart", function(e) {
       // Geliştirmek istersen burayı doldurabilirsin
     }
   }
+
+  let isMoveInProgress = false;
 </script>
 </body>
 </html> 
