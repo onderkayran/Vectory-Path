@@ -1558,7 +1558,8 @@
     if (isOnlineGame) {
       sendOnlineMove(move);
     } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
-      setTimeout(robotMove, 500);
+      setTimeout(() => { robotMove(); }, 500);
+      // isMoveInProgress robotMove sonunda false olacak
     }
     processMoveLocally(move);
   }
@@ -1576,9 +1577,9 @@
     playMoveSound();
 
     if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
-        startMoveTimer(); // 👈 Hamle sırası bana geçtiyse timer başlat
+        startMoveTimer();
     } else {
-        clearInterval(moveTimer); // 👈 Değilse timerı durdur
+        clearInterval(moveTimer);
         document.getElementById("turnTimer").style.display = 'none';
     }
     
@@ -1588,7 +1589,8 @@
     } else if (!canMove(lastPoint)) {
       endGame(move.player);
       isMoveInProgress = false;
-    } else {
+    } else if (!(modeSelect.value === 'robot' && currentPlayer === 2)) {
+      // Sıra robottaysa, robotMove sonunda isMoveInProgress false olacak
       isMoveInProgress = false;
     }
   }
@@ -1636,7 +1638,10 @@
 
   // Robot hamlesi - Expert mod güncellemesi
   function robotMove() {
-    if (!gameActive || modeSelect.value !== "robot") return;
+    if (!gameActive || modeSelect.value !== "robot") {
+      isMoveInProgress = false;
+      return;
+    }
     
     const endPoint = { x: gridW - 1, y: 0 };
     const difficulty = difficultySelect.value;
@@ -1738,6 +1743,8 @@
     } else if (!canMove(lastPoint)) {
         endGame(1); // Oyuncu kazanır
     }
+    // robotMove fonksiyonunun sonunda:
+    isMoveInProgress = false;
 }
 
   // Gelişmiş engelleme hamlesi bulma
