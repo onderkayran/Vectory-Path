@@ -1523,6 +1523,9 @@
 
   // Hamle yap
   function makeMove(point) {
+    // Sadece kendi sıramda hamle yapabilmem için kontrol ekle
+    if (!gameActive || (modeSelect.value === 'robot' && currentPlayer !== 1)) return;
+
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
       if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
