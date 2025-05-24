@@ -1523,24 +1523,13 @@
 
   // Hamle yap
   function makeMove(point) {
-    if (isMoveInProgress || !gameActive) return;
-    isMoveInProgress = true;
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
-      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) {
-        isMoveInProgress = false;
-        return;
-      }
+      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
     } else {
-      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) {
-        isMoveInProgress = false;
-        return;
-      }
+      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
     }
-    if (!gameActive || isLocked(point)) {
-      isMoveInProgress = false;
-      return;
-    }
+    if (!gameActive || isLocked(point)) return;
 
     const move = {
       from: lastPoint || { x: 0, y: gridH - 1 },
@@ -1558,9 +1547,9 @@
     if (isOnlineGame) {
       sendOnlineMove(move);
     } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
-      setTimeout(() => { robotMove(); }, 500);
-      // isMoveInProgress robotMove sonunda false olacak
+      setTimeout(robotMove, 500);
     }
+    
     processMoveLocally(move);
   }
 
@@ -1576,22 +1565,17 @@
     drawGrid();
     playMoveSound();
 
-    if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
-        startMoveTimer();
-    } else {
-        clearInterval(moveTimer);
-        document.getElementById("turnTimer").style.display = 'none';
-    }
+if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+    startMoveTimer(); // 👈 Hamle sırası bana geçtiyse timer başlat
+  } else {
+    clearInterval(moveTimer); // 👈 Değilse timerı durdur
+    document.getElementById("turnTimer").style.display = 'none';
+  }
     
     if (isEndPoint(move.to)) {
       endGame(move.player);
-      isMoveInProgress = false;
     } else if (!canMove(lastPoint)) {
       endGame(move.player);
-      isMoveInProgress = false;
-    } else if (!(modeSelect.value === 'robot' && currentPlayer === 2)) {
-      // Sıra robottaysa, robotMove sonunda isMoveInProgress false olacak
-      isMoveInProgress = false;
     }
   }
 
@@ -1638,10 +1622,7 @@
 
   // Robot hamlesi - Expert mod güncellemesi
   function robotMove() {
-    if (!gameActive || modeSelect.value !== "robot") {
-      isMoveInProgress = false;
-      return;
-    }
+    if (!gameActive || modeSelect.value !== "robot") return;
     
     const endPoint = { x: gridW - 1, y: 0 };
     const difficulty = difficultySelect.value;
@@ -1743,8 +1724,6 @@
     } else if (!canMove(lastPoint)) {
         endGame(1); // Oyuncu kazanır
     }
-    // robotMove fonksiyonunun sonunda:
-    isMoveInProgress = false;
 }
 
   // Gelişmiş engelleme hamlesi bulma
@@ -1988,7 +1967,7 @@
 
   // Tıklama işleyici
   canvas.addEventListener("click", function(e) {
-    if (isMoveInProgress || !gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+    if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -2659,7 +2638,8 @@ playAgainBtn.addEventListener('click', () => {
   // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
   e.preventDefault();
-  if (isMoveInProgress || !gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+
+ if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
@@ -2869,8 +2849,6 @@ canvas.addEventListener("touchstart", function(e) {
       // Geliştirmek istersen burayı doldurabilirsin
     }
   }
-
-  let isMoveInProgress = false;
 </script>
 </body>
 </html> 
