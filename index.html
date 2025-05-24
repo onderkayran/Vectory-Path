@@ -1993,6 +1993,29 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   });
 
   // Online oyun fonksiyonları
+  async function cleanUpOldMatches() {
+    // Eski oyun referanslarını temizle
+    if (currentGameRef) {
+      try { await currentGameRef.remove(); } catch (e) {}
+      currentGameRef = null;
+    }
+    if (matchmakingRef) {
+      try { await matchmakingRef.remove(); } catch (e) {}
+      matchmakingRef = null;
+    }
+    // Kendi playerId'niz ile ilgili eski matchmaking kayıtlarını sil
+    const snapshot = await database.ref('matchmaking').orderByChild('playerId').equalTo(myPlayerId).once('value');
+    snapshot.forEach(child => {
+      child.ref.remove();
+    });
+  }
+
+  // findOnlineMatch fonksiyonunun başında çağırın:
+  findOnlineMatch = async function() {
+    await cleanUpOldMatches();
+    // ... mevcut findOnlineMatch kodunuz ...
+  }
+
   function findOnlineMatch() {
     // Eski referansları ve dinleyicileri temizle
     if (currentGameRef) {
