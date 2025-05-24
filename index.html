@@ -759,6 +759,7 @@
 
   @media (max-width: 600px) {
     .bottom-nav button {
+      // ... existing styles ...
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
@@ -1522,9 +1523,6 @@
 
   // Hamle yap
   function makeMove(point) {
-    if (moveLocked) return; // Çift hamle engelleme
-    moveLocked = true;
-    setTimeout(() => { moveLocked = false; }, 350); // 350ms sonra tekrar hamleye izin ver
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
       if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
@@ -2851,8 +2849,6 @@ canvas.addEventListener("touchstart", function(e) {
       // Geliştirmek istersen burayı doldurabilirsin
     }
   }
-
-  let moveLocked = false;
 </script>
 </body>
 </html> 
