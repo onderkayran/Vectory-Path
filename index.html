@@ -1523,13 +1523,15 @@
 
   // Hamle yap
   function makeMove(point) {
+    if (isProcessingMove) return; // Hamle işleniyorsa yeni hamleye izin verme
+    isProcessingMove = true;
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
-      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
+      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) { isProcessingMove = false; return; }
     } else {
-      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
+      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) { isProcessingMove = false; return; }
     }
-    if (!gameActive || isLocked(point)) return;
+    if (!gameActive || isLocked(point)) { isProcessingMove = false; return; }
 
     const move = {
       from: lastPoint || { x: 0, y: gridH - 1 },
@@ -1551,6 +1553,8 @@
     }
     
     processMoveLocally(move);
+    // Hamle işlendikten sonra tekrar izin ver
+    isProcessingMove = false;
   }
 
   function processMoveLocally(move) {
@@ -2879,6 +2883,8 @@ canvas.addEventListener("touchstart", function(e) {
       // Geliştirmek istersen burayı doldurabilirsin
     }
   }
+
+  let isProcessingMove = false; // Kullanıcı hamlesi işleniyor mu?
 </script>
 </body>
 </html> 
