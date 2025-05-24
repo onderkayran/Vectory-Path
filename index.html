@@ -2179,6 +2179,18 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     obstacles = gameData.obstacles || [];
     
     currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
+
+    // --- onDisconnect ile otomatik oyun bitirme ---
+    if (currentGameRef && playerRole) {
+      // Kapanan oyuncunun rakibi kazanacak şekilde winner atanır
+      const winnerNum = playerRole === 'player1' ? 2 : 1;
+      currentGameRef.onDisconnect().update({
+        winner: winnerNum,
+        status: 'finished',
+        endedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+    // --- onDisconnect sonu ---
     
     // Rakip seviyesini yükle
     const opponentId = playerRole === 'player1' ? gameData.player2 : gameData.player1;
@@ -2408,6 +2420,16 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       document.getElementById('onlinePanel').style.display = 'none';
       document.getElementById('firstMoveHelp').style.display = 'block';
       if (currentGameRef) {
+        // Online oyundan çıkarken rakibi kazanan olarak ata
+        const winnerNum = playerRole === 'player1' ? 2 : 1;
+        currentGameRef.update({
+          winner: winnerNum,
+          status: 'finished',
+          endedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          cleanupOnlineGame();
+        });
+      } else {
         cleanupOnlineGame();
       }
       if (matchmakingRef) {
