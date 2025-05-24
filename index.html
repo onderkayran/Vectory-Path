@@ -2011,7 +2011,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   }
 
   // findOnlineMatch fonksiyonunun başında çağırın:
-  findOnlineMatch = async function() {
+  async function findOnlineMatch() {
     await cleanUpOldMatches();
     // ... mevcut findOnlineMatch kodunuz ...
   }
