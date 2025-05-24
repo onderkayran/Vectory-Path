@@ -1525,17 +1525,11 @@
   function makeMove(point) {
     if (!lastPoint) {
       const start = { x: 0, y: gridH - 1 };
-      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) {
-        return;
-      }
+      if (!isAdjacent(start, point) || edgeExists(start, point) || isObstacle(point)) return;
     } else {
-      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) {
-        return;
-      }
+      if (!isAdjacent(lastPoint, point) || edgeExists(lastPoint, point) || isObstacle(point)) return;
     }
-    if (!gameActive || isLocked(point)) {
-      return;
-    }
+    if (!gameActive || isLocked(point)) return;
 
     const move = {
       from: lastPoint || { x: 0, y: gridH - 1 },
@@ -2644,7 +2638,8 @@ playAgainBtn.addEventListener('click', () => {
   // Touch-event düzeltme
 canvas.addEventListener("touchstart", function(e) {
   e.preventDefault();
-  if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+
+ if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
 
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
