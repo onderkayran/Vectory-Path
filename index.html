@@ -2010,24 +2010,8 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     });
   }
 
-  // findOnlineMatch fonksiyonunun başında çağırın:
   async function findOnlineMatch() {
     await cleanUpOldMatches();
-    // ... mevcut findOnlineMatch kodunuz ...
-  }
-
-  function findOnlineMatch() {
-    // Eski referansları ve dinleyicileri temizle
-    if (currentGameRef) {
-      currentGameRef.off();
-      currentGameRef.remove(); // Firebase'den sil
-      currentGameRef = null;
-    }
-    if (matchmakingRef) {
-      matchmakingRef.off();
-      matchmakingRef.remove(); // Firebase'den sil
-      matchmakingRef = null;
-    }
     clearTimeout(matchTimeout);
     hasShownResult = false;
     gameOver = false;
