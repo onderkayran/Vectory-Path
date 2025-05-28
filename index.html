@@ -1547,7 +1547,7 @@
     if (isOnlineGame) {
       sendOnlineMove(move);
     } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
-      setTimeout(robotMove, 2000);
+      setTimeout(robotMove, 1000);
     }
     
     processMoveLocally(move);
