@@ -1547,7 +1547,7 @@
     if (isOnlineGame) {
       sendOnlineMove(move);
     } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
-      setTimeout(robotMove, 500);
+      setTimeout(robotMove, 2000);
     }
     
     processMoveLocally(move);
@@ -2744,11 +2744,16 @@ canvas.addEventListener("touchstart", function(e) {
   }
 
   // Ses efektlerini oynatma fonksiyonları
-  function playMoveSound() {
-    moveSound.volume = 0.2;
+ function playMoveSound() {
+  if (moveSound) {
+    moveSound.pause();
     moveSound.currentTime = 0;
-    moveSound.play();
+    moveSound.play().catch(e => {
+      // iOS autoplay politikaları nedeniyle sessiz hata olabilir
+      console.warn("Ses çalınamadı:", e);
+    });
   }
+}
 
   function playWinSound() {
     winSound.volume = 0.4;
