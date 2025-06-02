@@ -954,10 +954,8 @@
   const XP_PER_WIN = 20;
   const XP_PER_LOSS = 5;
 
-  function calculateLevel(wins, losses) {
-    const winPoints = Math.floor(wins / 5);
-    const lossPoints = Math.floor(losses / 5);
-    return Math.max(1, winPoints - lossPoints + 1);
+  function calculateLevel(wins) {
+  return Math.floor(wins / 5) + 1;
   }
 
   // LocalStorage'dan oyuncu verilerini yükle
@@ -1024,7 +1022,7 @@
                 totalWins = data.totalWins || totalWins;
                 
                 // Level tutarlılığını kontrol et
-                const calculatedLevel = calculateLevel(onlineWins, onlineLosses);
+                const calculatedLevel = calculateLevel(onlineWins);
                 if (calculatedLevel !== playerLevel) {
                     playerLevel = calculatedLevel;
                     if (calculatedLevel > oldLevel) {
@@ -1167,17 +1165,19 @@
   }
 
   function addXP(isWin) {
-    currentXP += isWin ? XP_PER_WIN : XP_PER_LOSS;
-    // Level atlama kontrolü
-    if (currentXP >= maxXP) {
-      currentXP = 0;
-      playerLevel++;
-      showLevelUpNotification();
-      updatePlayerData();
-      updateLevelDisplay();
-    }
-    updateLevelProgress();
+  currentXP += isWin ? XP_PER_WIN : XP_PER_LOSS;
+
+  if (currentXP >= maxXP) {
+    currentXP = 0;
+    playerLevel++;
+    showLevelUpNotification();
   }
+
+  savePlayerDataToLocalStorage();  // XP değiştiği an localStorage'a yaz
+  updatePlayerData();              // Firebase'e yaz (asenkron)
+  updateLevelDisplay();
+  updateLevelProgress();
+}
 
   // Record win fonksiyonunu güncelle
   function recordWin() {
