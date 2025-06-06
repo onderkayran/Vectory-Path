@@ -2172,6 +2172,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   }
 
   function startOnlineGame(gameData) {
+    document.getElementById('onlineMatchModal').style.display = 'none'; // Modalı kapat
     edges = [];
     lastPoint = null;
     isOnlineGame = true;
