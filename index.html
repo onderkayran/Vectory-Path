@@ -810,17 +810,25 @@
 <div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
   Your time: <span id="timeLeft">20</span> seconds
 </div>
-<div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;">
-<h5 class="text-center mb-3 fw-bold">Online Game</h5>
-<button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
-<div class="alert alert-info mt-3" id="matchStatus">
-<span id="matchStatusText">Searching for match...</span>
-<div class="progress" id="matchProgress">
-<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+<!-- Find Match Modal (Pop-up) -->
+<div class="modal-overlay" id="findMatchModal" style="display:none;">
+  <div class="modal-content" style="max-width:400px;">
+    <span class="close-modal" id="closeFindMatchModal">×</span>
+    <div id="findMatchModalContent">
+      <h5 class="text-center mb-3 fw-bold">Online Game</h5>
+      <button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
+      <div class="alert alert-info mt-3" id="matchStatus">
+        <span id="matchStatusText">Searching for match...</span>
+        <div class="progress" id="matchProgress">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-</div>
-</div>
-</div>
+
+<!-- Orijinal onlinePanel'i gizle (artık kullanılmayacak) -->
+<div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;"></div>
 
 <div class="bottom-nav">
 <div class="btn-group">
@@ -2077,7 +2085,8 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         // Zaman aşımı
         matchStatusText.textContent = "No matches found. Try again.";
         findMatchBtn.disabled = false;
-        matchmakingRef.remove();
+        // Modalı kapatma! Kullanıcı isterse kapatacak.
+        // matchmakingRef.remove(); // Kayıt silinebilir ama modal açık kalacak
         clearTimeout(matchTimeout);
       }
     });
@@ -2405,41 +2414,50 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Mod seçimi değiştiğinde
   modeSelect.addEventListener('change', function() {
     if (this.value === 'online') {
-      document.getElementById('onlinePanel').style.display = 'block';
+      findMatchModal.style.display = 'flex';
       document.getElementById('firstMoveHelp').style.display = 'none';
-      document.getElementById('findMatchBtn').disabled = false;
+      findMatchBtn.disabled = false;
       document.getElementById('matchStatus').style.display = 'none';
-    
       edges = [];
       lastPoint = null;
       obstacles = [];
       drawGrid();
-      // Online modda eşleşme bulunana kadar oyun pasif olsun
       gameActive = false;
     } else {
-      document.getElementById('onlinePanel').style.display = 'none';
+      findMatchModal.style.display = 'none';
       document.getElementById('firstMoveHelp').style.display = 'block';
-      if (currentGameRef) {
-        // Online oyundan çıkarken rakibi kazanan olarak ata
-        const winnerNum = playerRole === 'player1' ? 2 : 1;
-        currentGameRef.update({
-          winner: winnerNum,
-          status: 'finished',
-          endedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-          cleanupOnlineGame();
-        });
-      } else {
-        cleanupOnlineGame();
-      }
-      if (matchmakingRef) {
-        matchmakingRef.remove();
-        matchmakingRef = null;
-      }
-      // Diğer modlarda oyun aktif
+      cleanupOnlineGame();
       gameActive = true;
     }
   });
+
+  // Modal kapatma butonu
+  closeFindMatchModal.addEventListener('click', function() {
+    findMatchModal.style.display = 'none';
+    modeSelect.value = 'robot';
+    document.getElementById('firstMoveHelp').style.display = 'block';
+    cleanupOnlineGame();
+    gameActive = true;
+  });
+
+  // Modal dışına tıklayınca kapansın
+  findMatchModal.addEventListener('click', function(e) {
+    if (e.target === findMatchModal) {
+      findMatchModal.style.display = 'none';
+      modeSelect.value = 'robot';
+      document.getElementById('firstMoveHelp').style.display = 'block';
+      cleanupOnlineGame();
+      gameActive = true;
+    }
+  });
+
+  // Eşleşme bulunduğunda pop-up kapansın
+  function joinOnlineGame(gameId, role) {
+    playerRole = role;
+    currentGameRef = database.ref(`games/${gameId}`);
+    findMatchModal.style.display = 'none'; // Eşleşme bulunduğunda modalı kapat
+    // ... mevcut kod ...
+  }
 
   // Eşleşme butonu
   findMatchBtn.addEventListener('click', findOnlineMatch);
