@@ -810,14 +810,22 @@
 <div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
   Your time: <span id="timeLeft">20</span> seconds
 </div>
-<div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;">
-<h5 class="text-center mb-3 fw-bold">Online Game</h5>
-<button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
-<div class="alert alert-info mt-3" id="matchStatus">
-<span id="matchStatusText">Searching for match...</span>
-<div class="progress" id="matchProgress">
-<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
-</div>
+<!-- ESKİ: <div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;"> ... </div> -->
+<!-- YENİ: Modal popup -->
+<div class="modal-overlay" id="onlineMatchModal" style="display: none;">
+  <div class="modal-content" style="max-width: 400px; position: relative;">
+    <span class="close-modal" id="closeOnlineMatchModal">×</span>
+    <div id="onlinePanel">
+      <h5 class="text-center mb-3 fw-bold">Online Game</h5>
+      <button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
+      <div class="alert alert-info mt-3" id="matchStatus">
+        <span id="matchStatusText">Searching for match...</span>
+        <div class="progress" id="matchProgress">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -2405,22 +2413,19 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Mod seçimi değiştiğinde
   modeSelect.addEventListener('change', function() {
     if (this.value === 'online') {
-      document.getElementById('onlinePanel').style.display = 'block';
+      document.getElementById('onlineMatchModal').style.display = 'flex'; // Modalı aç
       document.getElementById('firstMoveHelp').style.display = 'none';
       document.getElementById('findMatchBtn').disabled = false;
       document.getElementById('matchStatus').style.display = 'none';
-    
       edges = [];
       lastPoint = null;
       obstacles = [];
       drawGrid();
-      // Online modda eşleşme bulunana kadar oyun pasif olsun
       gameActive = false;
     } else {
-      document.getElementById('onlinePanel').style.display = 'none';
+      document.getElementById('onlineMatchModal').style.display = 'none'; // Modalı kapat
       document.getElementById('firstMoveHelp').style.display = 'block';
       if (currentGameRef) {
-        // Online oyundan çıkarken rakibi kazanan olarak ata
         const winnerNum = playerRole === 'player1' ? 2 : 1;
         currentGameRef.update({
           winner: winnerNum,
@@ -2436,7 +2441,6 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         matchmakingRef.remove();
         matchmakingRef = null;
       }
-      // Diğer modlarda oyun aktif
       gameActive = true;
     }
   });
@@ -2884,6 +2888,52 @@ canvas.addEventListener("touchstart", function(e) {
       // Geliştirmek istersen burayı doldurabilirsin
     }
   }
+
+  // --- JS: modeSelect değişiminde paneli modal olarak aç/kapat ---
+  modeSelect.addEventListener('change', function() {
+    if (this.value === 'online') {
+      document.getElementById('onlineMatchModal').style.display = 'flex'; // Modalı aç
+      document.getElementById('firstMoveHelp').style.display = 'none';
+      document.getElementById('findMatchBtn').disabled = false;
+      document.getElementById('matchStatus').style.display = 'none';
+      edges = [];
+      lastPoint = null;
+      obstacles = [];
+      drawGrid();
+      gameActive = false;
+    } else {
+      document.getElementById('onlineMatchModal').style.display = 'none'; // Modalı kapat
+      document.getElementById('firstMoveHelp').style.display = 'block';
+      if (currentGameRef) {
+        const winnerNum = playerRole === 'player1' ? 2 : 1;
+        currentGameRef.update({
+          winner: winnerNum,
+          status: 'finished',
+          endedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          cleanupOnlineGame();
+        });
+      } else {
+        cleanupOnlineGame();
+      }
+      if (matchmakingRef) {
+        matchmakingRef.remove();
+        matchmakingRef = null;
+      }
+      gameActive = true;
+    }
+  });
+  // --- Modal kapatma butonu ve dışına tıklama ---
+  document.getElementById('closeOnlineMatchModal').addEventListener('click', function() {
+    document.getElementById('onlineMatchModal').style.display = 'none';
+    modeSelect.value = 'robot';
+  });
+  document.getElementById('onlineMatchModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.style.display = 'none';
+      modeSelect.value = 'robot';
+    }
+  });
 </script>
 </body>
 </html> 
