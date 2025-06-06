@@ -759,52 +759,9 @@
 
   @media (max-width: 600px) {
     .bottom-nav button {
-      /* ... existing styles ... */
+      // ... existing styles ...
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
-    }
-  }
-
-  /* Online Match Modal Styles */
-  #onlineMatchModalOverlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.4);
-    z-index: 2000;
-    justify-content: center;
-    align-items: center;
-  }
-  #onlineMatchModal {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    padding: 32px 24px 24px 24px;
-    max-width: 350px;
-    width: 90vw;
-    margin: 0 auto;
-    position: relative;
-    text-align: center;
-    animation: fadeIn 0.3s;
-  }
-  #closeOnlineMatchModal {
-    position: absolute;
-    top: 10px;
-    right: 16px;
-    font-size: 1.5rem;
-    color: #888;
-    background: none;
-    border: none;
-    cursor: pointer;
-    z-index: 10;
-  }
-  @media (max-width: 600px) {
-    #onlineMatchModal {
-      padding: 18px 6vw 18px 6vw;
-      max-width: 98vw;
     }
   }
 </style>
@@ -853,7 +810,15 @@
 <div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
   Your time: <span id="timeLeft">20</span> seconds
 </div>
-<div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;"></div>
+<div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;">
+<h5 class="text-center mb-3 fw-bold">Online Game</h5>
+<button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
+<div class="alert alert-info mt-3" id="matchStatus">
+<span id="matchStatusText">Searching for match...</span>
+<div class="progress" id="matchProgress">
+<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+</div>
+</div>
 </div>
 </div>
 
@@ -952,21 +917,6 @@
 <h2 id="loserText" style="background-color: #EA4335; color: white; padding: 15px; border-radius: 10px;">Unfortunately, You Lost!</h2>
 <button class="btn btn-light mt-3" id="tryAgainBtn">New Game</button>
 </div>
-</div>
-
-<!-- Online Match Modal -->
-<div id="onlineMatchModalOverlay">
-  <div id="onlineMatchModal">
-    <button id="closeOnlineMatchModal" title="Close">×</button>
-    <h5 class="mb-3 fw-bold">Online Game</h5>
-    <button class="btn btn-primary w-100 mb-2" id="findMatchBtn">Find Match</button>
-    <div class="alert alert-info mt-3" id="matchStatus">
-      <span id="matchStatusText">Searching for match...</span>
-      <div class="progress" id="matchProgress">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -2455,15 +2405,19 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Mod seçimi değiştiğinde
   modeSelect.addEventListener('change', function() {
     if (this.value === 'online') {
-      openOnlineMatchModal();
+      document.getElementById('onlinePanel').style.display = 'block';
       document.getElementById('firstMoveHelp').style.display = 'none';
+      document.getElementById('findMatchBtn').disabled = false;
+      document.getElementById('matchStatus').style.display = 'none';
+    
       edges = [];
       lastPoint = null;
       obstacles = [];
       drawGrid();
+      // Online modda eşleşme bulunana kadar oyun pasif olsun
       gameActive = false;
     } else {
-      closeOnlineMatchModalFunc();
+      document.getElementById('onlinePanel').style.display = 'none';
       document.getElementById('firstMoveHelp').style.display = 'block';
       if (currentGameRef) {
         // Online oyundan çıkarken rakibi kazanan olarak ata
@@ -2488,11 +2442,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   });
 
   // Eşleşme butonu
-  findMatchBtn.addEventListener('click', function() {
-    matchStatus.style.display = 'block';
-    findMatchBtn.disabled = true;
-    findOnlineMatch();
-  });
+  findMatchBtn.addEventListener('click', findOnlineMatch);
 
   // Sayfa yüklendiğinde
   window.addEventListener('DOMContentLoaded', function() {
@@ -2933,80 +2883,6 @@ canvas.addEventListener("touchstart", function(e) {
       // XP barı veya seviye ilerlemesi için placeholder
       // Geliştirmek istersen burayı doldurabilirsin
     }
-  }
-
-  // Online Match Modal açma/kapama fonksiyonları
-  const onlineMatchModalOverlay = document.getElementById('onlineMatchModalOverlay');
-  const onlineMatchModal = document.getElementById('onlineMatchModal');
-  const closeOnlineMatchModal = document.getElementById('closeOnlineMatchModal');
-  const modalFindMatchBtn = document.getElementById('findMatchBtn');
-  const modalMatchStatus = document.getElementById('matchStatus');
-  const modalMatchStatusText = document.getElementById('matchStatusText');
-  const modalMatchProgress = document.getElementById('matchProgress');
-
-  function openOnlineMatchModal() {
-    onlineMatchModalOverlay.style.display = 'flex';
-    modalMatchStatus.style.display = 'none';
-    modalFindMatchBtn.disabled = false;
-  }
-  function closeOnlineMatchModalFunc() {
-    onlineMatchModalOverlay.style.display = 'none';
-    modalMatchStatus.style.display = 'none';
-    modalFindMatchBtn.disabled = false;
-  }
-  closeOnlineMatchModal.addEventListener('click', closeOnlineMatchModalFunc);
-  onlineMatchModalOverlay.addEventListener('click', function(e) {
-    if (e.target === onlineMatchModalOverlay) closeOnlineMatchModalFunc();
-  });
-
-  // Mod seçimi değiştiğinde
-  modeSelect.addEventListener('change', function() {
-    if (this.value === 'online') {
-      openOnlineMatchModal();
-      document.getElementById('firstMoveHelp').style.display = 'none';
-      edges = [];
-      lastPoint = null;
-      obstacles = [];
-      drawGrid();
-      gameActive = false;
-    } else {
-      closeOnlineMatchModalFunc();
-      document.getElementById('firstMoveHelp').style.display = 'block';
-      if (currentGameRef) {
-        // Online oyundan çıkarken rakibi kazanan olarak ata
-        const winnerNum = playerRole === 'player1' ? 2 : 1;
-        currentGameRef.update({
-          winner: winnerNum,
-          status: 'finished',
-          endedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-          cleanupOnlineGame();
-        });
-      } else {
-        cleanupOnlineGame();
-      }
-      if (matchmakingRef) {
-        matchmakingRef.remove();
-        matchmakingRef = null;
-      }
-      // Diğer modlarda oyun aktif
-      gameActive = true;
-    }
-  });
-
-  // Find Match butonu tıklandığında modalda arama başlat
-  modalFindMatchBtn.addEventListener('click', function() {
-    modalMatchStatus.style.display = 'block';
-    modalFindMatchBtn.disabled = true;
-    findOnlineMatch();
-  });
-
-  // Eşleşme bulunduğunda modalı otomatik kapat
-  function joinOnlineGame(gameId, role) {
-    closeOnlineMatchModalFunc(); // Modalı kapat
-    playerRole = role;
-    currentGameRef = database.ref(`games/${gameId}`);
-    // ... mevcut joinOnlineGame kodu ...
   }
 </script>
 </body>
