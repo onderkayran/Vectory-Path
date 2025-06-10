@@ -933,6 +933,16 @@
 <script>
   // Firebase başlatma
   firebase.initializeApp(firebaseConfig);
+// BOT eşleşmesi için rastgele sayı üretici
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// BOT eşleşmesi olup olmadığını anlamak için
+function isFakeOnlineBot() {
+  return isOnlineGame && currentGameRef?.key?.startsWith("bot_");
+}
+
   const database = firebase.database();
 
   // Oyun durumu
@@ -1251,7 +1261,28 @@
     }, 3000);
   }
 
-  // Canvas ve UI elementleri
+  
+function startFakeOnlineMatchWithBot() {
+  isOnlineGame = true;
+  playerRole = 'player1';
+  currentGameRef = { key: 'bot_' + Date.now() }; // sahte referans
+
+  opponentLevel = getRandomInt(playerLevel - 1, playerLevel + 2);
+  const botNames = ["DeltaFox", "NeoBot", "ByteNinja", "ViralAI", "BotX99"];
+  const opponentName = botNames[Math.floor(Math.random() * botNames.length)];
+  document.getElementById('matchStatusText').innerText = "Opponent found!";
+  document.getElementById('playerRoleBadge').innerText = opponentName;
+
+  // UI güncellemesi ve oyunu başlat
+  setTimeout(() => {
+    document.getElementById('onlineMatchModal').style.display = 'none';
+    updateLevelDisplay();
+    startGame(); // mevcut başlatma fonksiyonun
+  }, 1000);
+}
+
+
+// Canvas ve UI elementleri
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
   const startButton = document.getElementById('startButton');
@@ -1554,7 +1585,10 @@
 
     if (isOnlineGame) {
       sendOnlineMove(move);
-    } else if (modeSelect.value === 'robot' && currentPlayer === 2) {
+    } else if ((modeSelect.value === 'robot' || isFakeOnlineBot()) && currentPlayer === 2) {
+  if (isFakeOnlineBot()) {
+    difficulty = Math.random() < 0.5 ? 'hard' : 'expert'; // Online botlar güçlü oynar
+  }
       setTimeout(robotMove, 700);
     }
     
