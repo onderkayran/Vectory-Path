@@ -949,6 +949,7 @@
   let playerRole = null;
   let myPlayerId = localStorage.getItem('vectoryPathPlayerId') || Math.random().toString(36).substr(2, 9);
   localStorage.setItem('vectoryPathPlayerId', myPlayerId);
+  window.myPlayerId = myPlayerId; // <-- BURADA OLMALI
   let matchmakingRef = null;
   let matchTimeout = null;
 
