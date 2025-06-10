@@ -934,7 +934,6 @@
   // Firebase başlatma
   firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
-  window.myPlayerId = myPlayerId;
 
   // Oyun durumu
   let hasShownResult = false;
@@ -949,7 +948,6 @@
   let playerRole = null;
   let myPlayerId = localStorage.getItem('vectoryPathPlayerId') || Math.random().toString(36).substr(2, 9);
   localStorage.setItem('vectoryPathPlayerId', myPlayerId);
-  window.myPlayerId = myPlayerId; // <-- BURADA OLMALI
   let matchmakingRef = null;
   let matchTimeout = null;
 
@@ -2102,15 +2100,6 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       });
     }, 30000);
 
-    // --- BOT: 10 saniye sonunda gerçek rakip yoksa bot ile eşleş ---
-    setTimeout(() => {
-      if (!isOnlineGame && playerRole === null) {
-        // Hala eşleşme yoksa bot ile başlat
-        startBotOnlineMatch();
-      }
-    }, 7000); // 7 saniye
-    // --- BOT SONU ---
-
     // Uygun eşleşme ara
     database.ref('matchmaking').orderByChild('status').equalTo('waiting').once('value', (snapshot) => {
       const now = Date.now();
@@ -2946,226 +2935,6 @@ canvas.addEventListener("touchstart", function(e) {
       modeSelect.value = 'robot';
     }
   });
-
-  // --- BOT ile online eşleşme başlatan fonksiyon ---
-  function startBotOnlineMatch() {
-    // Sahte bot playerId ve seviye
-    const botId = 'bot_' + Math.random().toString(36).substr(2, 6);
-    const botLevel = Math.max(1, playerLevel + Math.floor(Math.random() * 3) - 1); // Oyuncuya yakın seviye
-    const config = {
-      gridWidth: parseInt(document.getElementById('gridWidth').value),
-      gridHeight: parseInt(document.getElementById('gridHeight').value),
-      difficulty: document.getElementById('difficultySelect').value
-    };
-    const gameId = generateGameId();
-    const gameRef = database.ref(`games/${gameId}`);
-    // Oyunu başlat (oyuncu ve bot ile)
-    gameRef.set({
-      player1: myPlayerId,
-      player2: botId,
-      status: 'playing',
-      config: config,
-      currentPlayer: 'player1',
-      obstacles: [], // Engelleri daha sonra ekleyeceğiz
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      // Botun oyuncu gibi davranması için matchmakingRef güncelle
-      matchmakingRef.update({
-        gameId: gameId,
-        playerRole: 'player1',
-        status: 'matched'
-      });
-      // Botun seviyesini Firebase'e kaydet (gerekirse)
-      database.ref(`players/${botId}`).set({
-        level: botLevel,
-        currentXP: 0,
-        onlineWins: 0,
-        onlineLosses: 0,
-        totalWins: 0,
-        lastPlayed: new Date().toISOString()
-      });
-      // Botun hamlelerini başlatmak için flag
-      window._vectoryBotOnline = {
-        botId,
-        botLevel,
-        gameId,
-        config
-      };
-    });
-    // Bot ile eşleşmede oyunu hemen başlat
-    joinOnlineGame(gameId, 'player1');
-  }
-
-  // --- BOT: Online oyun sırasında botun hamlelerini yöneten fonksiyon ---
-  function startBotOnlinePlay(gameId) {
-    // Botun hamle sırası geldikçe, gerçekçi süreyle en iyi hamleyi yapacak
-    let botMoveTimeout = null;
-    let botStopped = false;
-
-    function getCurrentGameState(callback) {
-      database.ref(`games/${gameId}`).once('value').then(snap => {
-        callback(snap.val());
-      });
-    }
-
-    function botBestMove(game) {
-      // Oyunun mevcut durumunu analiz et
-      const gridW = game.config.gridWidth;
-      const gridH = game.config.gridHeight;
-      const edges = game.moves ? Object.values(game.moves).map(m => ({from: m.from, to: m.to, player: m.player})) : [];
-      const obstacles = game.obstacles || [];
-      let lastPoint = null;
-      let botPlayerNum = (game.player1 === window.myPlayerId) ? 2 : 1;
-      // Botun son noktası
-      for (const edge of edges) {
-        if (edge.player === botPlayerNum) {
-          lastPoint = edge.to;
-        }
-      }
-      if (!lastPoint) {
-        // Bot ilk hamlesini yapacaksa, oyuncunun ilk hamlesini bul
-        let playerStart = {x: 0, y: gridH - 1};
-        for (const edge of edges) {
-          if (edge.player !== botPlayerNum) {
-            lastPoint = edge.to;
-          }
-        }
-        if (!lastPoint) return null;
-      }
-      // Tüm olası hamleleri bul
-      const possibleMoves = [];
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          if (dx === 0 && dy === 0) continue;
-          const nx = lastPoint.x + dx;
-          const ny = lastPoint.y + dy;
-          if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
-            const next = {x: nx, y: ny};
-            // Hamle geçerli mi?
-            const edgeExists = edges.some(e =>
-              (e.from.x === lastPoint.x && e.from.y === lastPoint.y && e.to.x === next.x && e.to.y === next.y) ||
-              (e.to.x === lastPoint.x && e.to.y === lastPoint.y && e.from.x === next.x && e.from.y === next.y)
-            );
-            const isObstacle = obstacles.some(o => o.x === nx && o.y === ny);
-            if (!edgeExists && !isObstacle) {
-              possibleMoves.push(next);
-            }
-          }
-        }
-      }
-      if (possibleMoves.length === 0) return null;
-      // En iyi hamleyi bul: Rakibi engelleyen, kazanma şansı olanı seç
-      // (Basit: Rakibi hamlesiz bırakmaya öncelik ver, yoksa rastgele)
-      let bestMove = null;
-      let maxBlock = -1;
-      for (const move of possibleMoves) {
-        // Rakibin bu hamleden sonra kaç seçeneği kalıyor?
-        let tempEdges = [...edges, {from: lastPoint, to: move, player: botPlayerNum}];
-        let playerNum = botPlayerNum === 1 ? 2 : 1;
-        let playerLast = null;
-        for (const edge of tempEdges) {
-          if (edge.player === playerNum) {
-            playerLast = edge.to;
-          }
-        }
-        if (!playerLast) playerLast = (playerNum === 1) ? {x: 0, y: gridH - 1} : {x: gridW - 1, y: 0};
-        let playerMoves = 0;
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            if (dx === 0 && dy === 0) continue;
-            const nx = playerLast.x + dx;
-            const ny = playerLast.y + dy;
-            if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) {
-              const next = {x: nx, y: ny};
-              const edgeExists = tempEdges.some(e =>
-                (e.from.x === playerLast.x && e.from.y === playerLast.y && e.to.x === next.x && e.to.y === next.y) ||
-                (e.to.x === playerLast.x && e.to.y === playerLast.y && e.from.x === next.x && e.from.y === next.y)
-              );
-              const isObstacle = obstacles.some(o => o.x === nx && o.y === ny);
-              if (!edgeExists && !isObstacle) {
-                playerMoves++;
-              }
-            }
-          }
-        }
-        if (playerMoves > maxBlock) {
-          maxBlock = playerMoves;
-          bestMove = move;
-        }
-      }
-      // Rakibi en çok kısıtlayan hamleyi seç, yoksa rastgele
-      return bestMove || possibleMoves[0];
-    }
-
-    function botPlayLoop() {
-      if (botStopped) return;
-      getCurrentGameState(game => {
-        if (!game || game.status !== 'playing') return;
-        const botPlayerNum = (game.player1 === window.myPlayerId) ? 2 : 1;
-        if (game.currentPlayer !== (botPlayerNum === 1 ? 'player1' : 'player2')) {
-          // Botun sırası değil
-          botMoveTimeout = setTimeout(botPlayLoop, 1000);
-          return;
-        }
-        // Botun hamlesi
-        const move = botBestMove(game);
-        if (!move) return; // Oyun bitmiş olabilir
-        // Hamle arası gerçekçi bekleme
-        const delay = 2000 + Math.random() * 3000;
-        botMoveTimeout = setTimeout(() => {
-          // Hamleyi Firebase'e push et
-          database.ref(`games/${gameId}/moves`).push({
-            from: getBotLastPoint(game, botPlayerNum),
-            to: move,
-            player: botPlayerNum,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-          });
-          // Sırayı değiştir
-          database.ref(`games/${gameId}`).update({
-            currentPlayer: (botPlayerNum === 1 ? 'player2' : 'player1')
-          });
-          // Sonraki hamle için döngü
-          botPlayLoop();
-        }, delay);
-      });
-    }
-
-    function getBotLastPoint(game, botPlayerNum) {
-      const edges = game.moves ? Object.values(game.moves).map(m => ({from: m.from, to: m.to, player: m.player})) : [];
-      let lastPoint = null;
-      for (const edge of edges) {
-        if (edge.player === botPlayerNum) {
-          lastPoint = edge.to;
-        }
-      }
-      if (!lastPoint) {
-        // Bot ilk hamlesini yapacaksa, oyuncunun ilk hamlesini bul
-        let playerStart = {x: 0, y: game.config.gridHeight - 1};
-        for (const edge of edges) {
-          if (edge.player !== botPlayerNum) {
-            lastPoint = edge.to;
-          }
-        }
-        if (!lastPoint) lastPoint = (botPlayerNum === 1) ? {x: 0, y: game.config.gridHeight - 1} : {x: game.config.gridWidth - 1, y: 0};
-      }
-      return lastPoint;
-    }
-
-    // Bot döngüsünü başlat
-    botPlayLoop();
-    // Oyun bitince botu durdurmak için
-    window._vectoryBotOnlineStop = () => { botStopped = true; clearTimeout(botMoveTimeout); };
-  }
-
-  // --- joinOnlineGame fonksiyonuna bot kontrolü ekle ---
-  const _oldJoinOnlineGame = joinOnlineGame;
-  joinOnlineGame = function(gameId, role) {
-    _oldJoinOnlineGame.apply(this, arguments);
-    // Eğer bot ile eşleşildiyse botu başlat
-    if (window._vectoryBotOnline && window._vectoryBotOnline.gameId === gameId) {
-      startBotOnlinePlay(gameId);
-    }
-  }
 </script>
 </body>
 </html> 
