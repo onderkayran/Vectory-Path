@@ -307,7 +307,9 @@
     /* Level gösterme stili */
     .level-display-container {
       display: flex;
-      justify-content: space-between;
+      justify-content: space-between; /* Öğeleri kenarlara yayar */
+      align-items: center;
+      /* gap: 20px; kaldırıldı */
       margin: -10px 0 20px 0;
       position: relative;
       z-index: 100;
@@ -393,6 +395,14 @@
         padding: 1px 3px;
         background: rgba(255, 255, 255, 0.95);
         z-index: 1002;
+      }
+
+      /* Mobil için turnTimer stili */
+      #turnTimer {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        border-radius: 6px;
+        margin: 0;
       }
 
       .level-up-notification {
@@ -763,6 +773,16 @@
       touch-action: manipulation;
     }
   }
+
+  /* Yeni turnTimer stili */
+  #turnTimer {
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    border-radius: 8px;
+    /* margin: 0 auto; kaldırıldı, flex gap ile kontrol edilecek */
+    width: auto; /* İçeriğe göre genişlik */
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -788,6 +808,9 @@
     <span id="playerLevelBadge">1</span>
     <span class="level-label" style="color: black;">Level</span>
   </div>
+  <div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
+    Your time: <span id="timeLeft">20</span> seconds
+  </div>
   <div class="level-badge opponent-level" id="opponentLevelBadge" style="display:none;">
     <span id="opponentLevelValue">1</span>
     <span class="level-label" style="color: black;">Opponent</span>
@@ -806,9 +829,6 @@
     Click one of the points adjacent to the bottom-left corner (green dot) to start the game. 
 </div>
 <button class="btn btn-danger w-100 mb-2" id="leaveGameBtn" style="display:none;">Leave Game</button>
-<div class="alert alert-warning text-center fw-bold" id="turnTimer" style="display:none;">
-  Your time: <span id="timeLeft">20</span> seconds
-</div>
 <!-- ESKİ: <div class="mt-4 p-3 border rounded bg-light" id="onlinePanel" style="display: none;"> ... </div> -->
 <!-- YENİ: Modal popup -->
 <div class="modal-overlay" id="onlineMatchModal" style="display: none;">
