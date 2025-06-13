@@ -1577,13 +1577,27 @@
     drawGrid();
     playMoveSound();
 
-    if (isOnlineGame && !isOnlineBotGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+   if (isOnlineGame) {
+    if (isOnlineBotGame) {
+      if (currentPlayer === 1) { // Sıra oyuncuda
         startMoveTimer();
-   
-    } else { // Stop timer if not current player's turn or local game
+      } else { // Sıra botta
         clearInterval(moveTimer);
         document.getElementById("turnTimer").style.display = 'none';
+        if (!isBotMoveScheduled) {
+          isBotMoveScheduled = true;
+          setTimeout(robotMove, 1000);
+        }
+      }
+} else { // Normal online oyun
+      if (currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+        startMoveTimer();
+      } else {
+        clearInterval(moveTimer);
+        document.getElementById("turnTimer").style.display = 'none';
+      }
     }
+  }
     
     if (isEndPoint(move.to)) {
       endGame(move.player);
