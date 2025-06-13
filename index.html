@@ -2077,6 +2077,7 @@
   }
 
   async function findOnlineMatch() {
+    document.getElementById('onlineMatchModal').style.display = 'flex'; // Add this line to ensure modal is shown
     await cleanUpOldMatches();
     clearTimeout(matchTimeout);
     hasShownResult = false;
@@ -2192,7 +2193,7 @@ if (gameStatusText) {
     playerRole = 'player1'; // Assume player is always player1 against bot
 
     // Simulate bot's level (e.g., average level or slightly below/above player's level)
-    opponentLevel = Math.max(1, playerLevel + Math.floor(Math.random() * 3) - 1); // PlayerLevel +/- 1, min 1
+    opponentLevel = Math.max(1, playerLevel + Math.floor(Math.random() * 7) - 3); // PlayerLevel +/- 3, min 1
 
     const botGameId = 'bot-game-' + Math.random().toString(36).substr(2, 8);
     currentGameRef = database.ref(`games/${botGameId}`);
@@ -2836,7 +2837,7 @@ playAgainBtn.addEventListener('click', () => {
   loserModal.style.display = 'none';
   if (modeSelect.value === 'online') {
     cleanupOnlineGame();
-    // findOnlineMatch(); // Bu satırı kaldır
+    findOnlineMatch(); // Bu satır etkinleştirildi
   } else {
     startGame();
   }
@@ -2848,7 +2849,7 @@ playAgainBtn.addEventListener('click', () => {
 
    if (modeSelect.value === 'online') {
     cleanupOnlineGame();
-    // findOnlineMatch(); // Bu satırı kaldır
+    findOnlineMatch(); // Bu satır etkinleştirildi
   } else {
     startGame();
   }
@@ -3072,11 +3073,9 @@ canvas.addEventListener("touchstart", function(e) {
   });
 
   // Eğer updateLevelProgress fonksiyonu yoksa, aşağıya ekle:
-  if (typeof updateLevelProgress !== 'function') {
-    function updateLevelProgress() {
-      // XP barı veya seviye ilerlemesi için placeholder
-      // Geliştirmek istersen burayı doldurabilirsin
-    }
+  function updateLevelProgress() {
+    // XP barı veya seviye ilerlemesi için placeholder
+    // Geliştirmek istersen burayı doldurabilirsin
   }
 
   // --- JS: modeSelect değişiminde paneli modal olarak aç/kapat ---
