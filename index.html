@@ -759,7 +759,6 @@
 
   @media (max-width: 600px) {
     .bottom-nav button {
-      // ... existing styles ...
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
@@ -950,6 +949,9 @@
   localStorage.setItem('vectoryPathPlayerId', myPlayerId);
   let matchmakingRef = null;
   let matchTimeout = null;
+  let isOnlineBotGame = false; // Add this line
+  const HUMAN_MATCH_TIMEOUT_DURATION = 7000; // 7 seconds for human matchmaking
+  let onlineBotDifficulty = 'easy'; // varsayılan, eşleşmede rastgele belirlenecek
 
   // Level sistemi değişkenleri
   let playerLevel = 1;
@@ -961,6 +963,8 @@
   const maxXP = 100;
   const XP_PER_WIN = 20;
   const XP_PER_LOSS = 5;
+  let gameInitializedForOnlineMode = false; // New flag
+  let isBotMoveScheduled = false; // NEW FLAG HERE
 
   function calculateLevel(wins) {
   return Math.floor(wins / 5) + 1;
@@ -1573,17 +1577,22 @@
     drawGrid();
     playMoveSound();
 
-if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
-    startMoveTimer(); // 👈 Hamle sırası bana geçtiyse timer başlat
-  } else {
-    clearInterval(moveTimer); // 👈 Değilse timerı durdur
-    document.getElementById("turnTimer").style.display = 'none';
-  }
+    if (isOnlineGame && !isOnlineBotGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
+        startMoveTimer();
+   
+    } else { // Stop timer if not current player's turn or local game
+        clearInterval(moveTimer);
+        document.getElementById("turnTimer").style.display = 'none';
+    }
     
     if (isEndPoint(move.to)) {
       endGame(move.player);
     } else if (!canMove(lastPoint)) {
       endGame(move.player);
+    }
+
+    if (!isOnlineGame && modeSelect.value === 'robot' && currentPlayer === 2) {
+      setTimeout(robotMove, 700);
     }
   }
 
@@ -1630,10 +1639,15 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
 
   // Robot hamlesi - Expert mod güncellemesi
   function robotMove() {
-    if (!gameActive || modeSelect.value !== "robot") return;
+    if (!gameActive) return;
+
+    const isRobotTurn = (modeSelect.value === "robot" && currentPlayer === 1) || 
+                       (isOnlineBotGame && currentPlayer === 2);
+    
+    if (!isRobotTurn) return;
     
     const endPoint = { x: gridW - 1, y: 0 };
-    const difficulty = difficultySelect.value;
+    const difficulty = isOnlineGame ? onlineBotDifficulty : difficultySelect.value;
     
     // Easy modunda sadece rastgele hamle yap
     if (difficulty === 'easy') {
@@ -2049,18 +2063,19 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   }
 
   async function findOnlineMatch() {
-    await cleanUpOldMatches(); // <-- Temizlik fonksiyonu ilk satırda
+    await cleanUpOldMatches();
     clearTimeout(matchTimeout);
     hasShownResult = false;
     gameOver = false;
     isOnlineGame = false;
     playerRole = null;
     opponentLevel = null;
+    isOnlineBotGame = false; // Reset bot game flag
 
     matchStatus.style.display = 'block';
     matchStatusText.textContent = "Searching for match...";
     findMatchBtn.disabled = true;
-    
+
     // Eşleşme kuyruğuna ekle
     matchmakingRef = database.ref('matchmaking').push({
       playerId: myPlayerId,
@@ -2080,17 +2095,16 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       
       if (matchData.status === 'matched' && matchData.gameId) {
         // Eşleşme bulundu
+        clearTimeout(matchTimeout); // Clear bot timeout if human found
         joinOnlineGame(matchData.gameId, matchData.playerRole);
       } else if (matchData.status === 'timeout') {
-        // Zaman aşımı
-        matchStatusText.textContent = "No matches found. Try again.";
-        findMatchBtn.disabled = false;
-        matchmakingRef.remove();
-        clearTimeout(matchTimeout);
+        // Zaman aşımı (human matchmaking için)
+        matchStatusText.textContent = "No human matches found. Starting bot game...";
+        startBotMatch(); // Start bot game
       }
     });
 
-    // Eşleşme bulmaya çalış (30 seconds içinde)
+    // Eşleşme bulmaya çalış (HUMAN_MATCH_TIMEOUT_DURATION içinde)
     matchTimeout = setTimeout(() => {
       matchmakingRef.transaction((currentData) => {
         if (currentData && currentData.status === 'waiting') {
@@ -2098,7 +2112,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         }
         return currentData;
       });
-    }, 30000);
+    }, HUMAN_MATCH_TIMEOUT_DURATION);
 
     // Uygun eşleşme ara
     database.ref('matchmaking').orderByChild('status').equalTo('waiting').once('value', (snapshot) => {
@@ -2139,14 +2153,121 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
             database.ref(`matchmaking/${childSnapshot.key}`).remove();
             matchmakingRef.remove();
           }, 5000);
+          clearTimeout(matchTimeout); // Human found, clear bot timeout
           return true; // Döngüyü sonlandır
         }
       });
     });
   }
 
+  function startBotMatch() {
+    isOnlineBotGame = true;
+    isOnlineBotGame = true;
+
+// BOT zorluk seviyesi rastgele belirleniyor
+const difficulties = ['easy', 'medium', 'hard', 'expert'];
+const randomIndex = Math.floor(Math.random() * difficulties.length);
+onlineBotDifficulty = difficulties[randomIndex];
+console.log("BOT zorluk seviyesi:", onlineBotDifficulty);
+
+// (İsteğe bağlı) oyuncuya göster
+const gameStatusText = document.getElementById("gameStatusText");
+if (gameStatusText) {
+  gameStatusText.textContent = `Matched with Bot (Difficulty: ${onlineBotDifficulty.toUpperCase()})`;
+}
+    playerRole = 'player1'; // Assume player is always player1 against bot
+
+    // Simulate bot's level (e.g., average level or slightly below/above player's level)
+    opponentLevel = Math.max(1, playerLevel + Math.floor(Math.random() * 3) - 1); // PlayerLevel +/- 1, min 1
+
+    const botGameId = 'bot-game-' + Math.random().toString(36).substr(2, 8);
+    currentGameRef = database.ref(`games/${botGameId}`);
+
+    const gameConfig = {
+      gridWidth: parseInt(document.getElementById('gridWidth').value),
+      gridHeight: parseInt(document.getElementById('gridHeight').value),
+      difficulty: document.getElementById('difficultySelect').value
+    };
+
+    // Initialize bot game state directly, no need for waiting status
+    currentGameRef.set({
+      player1: myPlayerId,
+      player2: 'BOT_PLAYER', // Unique ID for the bot
+      status: 'playing',
+      config: gameConfig,
+      currentPlayer: 'player1',
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      obstacles: [] // Generate obstacles for the bot game
+    }).then(() => {
+      // Generate obstacles after setting initial game state
+      generateObstaclesForBotGame(botGameId, gameConfig.gridWidth, gameConfig.gridHeight, gameConfig.difficulty);
+      startOnlineGame({
+        player1: myPlayerId,
+        player2: 'BOT_PLAYER',
+        status: 'playing',
+        config: gameConfig,
+        currentPlayer: 'player1',
+        obstacles: obstacles // Use globally generated obstacles
+      });
+      document.getElementById('onlineMatchModal').style.display = 'none'; // Modalı kapat
+    }).catch(error => {
+      console.error("Bot oyunu başlatılırken hata:", error);
+      matchStatusText.textContent = "Failed to start bot game.";
+      findMatchBtn.disabled = false;
+      matchStatus.style.display = 'none';
+      matchProgress.style.display = 'block';
+    });
+  }
+
+  // Yeni fonksiyon: Bot oyunu için engel oluştur
+  function generateObstaclesForBotGame(gameId, width, height, difficulty) {
+    obstacles = [];
+    let obstacleCount;
+    
+    switch(difficulty) {
+      case 'easy': obstacleCount = Math.floor(width * height * 0.05); break;
+      case 'medium': obstacleCount = Math.floor(width * height * 0.1); break;
+      case 'hard': obstacleCount = Math.floor(width * height * 0.15); break;
+      case 'expert': obstacleCount = 0; break;
+    }
+    
+    // Kilitli noktaları ekle (5x5 ve üzeri gridlerde)
+    if (width >= 5 && height >= 5) {
+      addLockedPoints(4); // Use existing addLockedPoints
+    }
+    
+    const protectedPoints = [
+      {x: 0, y: height - 1}, {x: width - 1, y: 0},
+      {x: 0, y: height - 2}, {x: 1, y: height - 1},
+      {x: 1, y: height - 2}, {x: width - 1, y: 1},
+      {x: width - 2, y: 0}, {x: width - 2, y: 1}
+    ];
+    
+    let attempts = 0;
+    while (obstacles.length < obstacleCount && attempts < 100) {
+      attempts++;
+      const x = Math.floor(Math.random() * width);
+      const y = Math.floor(Math.random() * height);
+      
+      const isProtected = protectedPoints.some(p => p.x === x && p.y === y);
+      const exists = obstacles.some(obs => obs.x === x && obs.y === y);
+      
+      if (!isProtected && !exists) {
+        const tempObstacles = [...obstacles, {x, y}];
+        const start = {x: 0, y: height - 1};
+        const end = {x: width - 1, y: 0};
+        if (isPathPossible(start, end, tempObstacles)) {
+          obstacles.push({x, y});
+        }
+      }
+    }
+    // Update obstacles in Firebase for the bot game
+    database.ref(`games/${gameId}`).update({ obstacles: obstacles });
+  }
+
   function joinOnlineGame(gameId, role) {
     playerRole = role;
+    isOnlineBotGame = false; // Ensure this is false for real online games
     currentGameRef = database.ref(`games/${gameId}`);
     
     matchStatusText.textContent = `Match found! Game ID: ${gameId}`;
@@ -2156,41 +2277,68 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       const game = snapshot.val();
       if (!game) return;
       if (game.status === 'playing' && (!game.obstacles || Object.keys(game.obstacles).length === 0)) {
+        // Wait for obstacles to be set by player1, or regenerate if somehow missing
+        if (playerRole === 'player1' && game.obstacles === undefined) {
+             generateObstacles(); // Player1 generates if not set
+             currentGameRef.update({ obstacles: obstacles });
+        }
         return;
       }
-
       startOnlineGame(game);
-
       if (game.moves) {
         processOnlineMoves(game.moves);
       }
-
       if (game.winner && !hasShownResult) {
-      endOnlineGame(game.winner);
+        endOnlineGame(game.winner);
       }
     });
   }
 
   function startOnlineGame(gameData) {
+    if (gameInitializedForOnlineMode && isOnlineGame) { // If already initialized for online mode
+        // Only update current player and status if already active
+        currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
+        updateOnlineStatus(`Game started! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
+        
+        // This is crucial: if it's bot's turn and the game was already running, re-trigger
+        if (isOnlineBotGame && currentPlayer === 2 && gameActive) {
+            clearInterval(moveTimer); // Clear any existing timer
+            document.getElementById("turnTimer").style.display = 'none';
+            // const botMoveDelay = Math.floor(Math.random() * 3001) + 2000;
+            // setTimeout(robotMove, botMoveDelay);
+        } else if (!isOnlineBotGame && currentPlayer === (playerRole === 'player1' ? 1 : 2) && gameActive) {
+            startMoveTimer();
+        } else {
+            clearInterval(moveTimer);
+            document.getElementById("turnTimer").style.display = 'none';
+        }
+        drawGrid(); // Redraw if state changed
+        return; // Exit after updating
+    }
+
+    // Initial setup (only runs once per online game)
     document.getElementById('onlineMatchModal').style.display = 'none'; // Modalı kapat
     edges = [];
     lastPoint = null;
     isOnlineGame = true;
     gameActive = true;
+    gameInitializedForOnlineMode = true; // Set the flag
+    isBotMoveScheduled = false; // Ensure it's false for new game start
     
     gridW = gameData.config.gridWidth;
     gridH = gameData.config.gridHeight;
-    difficultySelect.value = gameData.config.difficulty;
     
     document.getElementById('gridWidth').value = gridW;
     document.getElementById('gridHeight').value = gridH;
+    
+    difficultySelect.value = gameData.config.difficulty;
     
     obstacles = gameData.obstacles || [];
     
     currentPlayer = gameData.currentPlayer === 'player1' ? 1 : 2;
 
     // --- onDisconnect ile otomatik oyun bitirme ---
-    if (currentGameRef && playerRole) {
+    if (currentGameRef && playerRole && !isOnlineBotGame) { // Only for real online games
       // Kapanan oyuncunun rakibi kazanacak şekilde winner atanır
       const winnerNum = playerRole === 'player1' ? 2 : 1;
       currentGameRef.onDisconnect().update({
@@ -2202,14 +2350,18 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     // --- onDisconnect sonu ---
     
     // Rakip seviyesini yükle
-    const opponentId = playerRole === 'player1' ? gameData.player2 : gameData.player1;
-    database.ref(`players/${opponentId}`).once('value').then(snapshot => {
-      const data = snapshot.val();
-      if (data) {
-        opponentLevel = data.level || 1;
-        updateLevelDisplay();
-      }
-    });
+    if (!isOnlineBotGame) { // Only for real online games
+      const opponentId = playerRole === 'player1' ? gameData.player2 : gameData.player1;
+      database.ref(`players/${opponentId}`).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          opponentLevel = data.level || 1;
+          updateLevelDisplay();
+        }
+      });
+    } else {
+      updateLevelDisplay(); // Display bot's level
+    }
     
     resizeCanvas();
     updateOnlineStatus(`Game started! (Turn: ${currentPlayer === (playerRole === 'player1' ? 1 : 2) ? 'You' : 'Opponent'})`, playerRole);
@@ -2218,19 +2370,31 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     // İlk hamle süresini başlat
     if (currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
       startMoveTimer();
+    } else if (isOnlineBotGame && currentPlayer === 2) { // If it's bot's turn in a bot game
+      const botMoveDelay = Math.floor(Math.random() * 3001) + 2000; // 2000 to 5000 ms
+      setTimeout(robotMove, botMoveDelay);
     }
   }
 
   function sendOnlineMove(move) {
-    currentGameRef.child('moves').push({
-      ...move,
-      timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
-    
-    const nextPlayer = playerRole === 'player1' ? 'player2' : 'player1';
-    currentGameRef.update({
-      currentPlayer: nextPlayer
-    });
+    if (isOnlineBotGame) {
+      processMoveLocally(move);
+      // For bot games, directly trigger bot's move
+      if (gameActive && currentPlayer === 2) {
+          const botMoveDelay = Math.floor(Math.random() * 3001) + 2000; // 2000 to 5000 ms
+          setTimeout(robotMove, botMoveDelay);
+      }
+    } else {
+      currentGameRef.child('moves').push({
+        ...move,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+      
+      const nextPlayer = playerRole === 'player1' ? 'player2' : 'player1';
+      currentGameRef.update({
+        currentPlayer: nextPlayer
+      });
+    }
   }
 
   function processOnlineMoves(moves) {
@@ -2318,7 +2482,9 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   // Tüm Firebase dinleyicilerini kapat
   if (currentGameRef) {
     currentGameRef.off();
-    currentGameRef.remove(); // Firebase'den sil
+    if (!isOnlineBotGame) { // Only remove if it's a real online game
+      currentGameRef.remove(); // Firebase'den sil
+    }
     currentGameRef = null;
   }
   if (matchmakingRef) {
@@ -2329,10 +2495,12 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   clearTimeout(matchTimeout);
   
   isOnlineGame = false;
+  isOnlineBotGame = false; // Reset the flag
   playerRole = null;
   opponentLevel = null;
   hasShownResult = false;
-  gameOver = false;
+  gameOver = false; // Reset for new games
+  gameInitializedForOnlineMode = false; // Reset the flag
   updateOnlineStatus('', '');
   findMatchBtn.disabled = false;
   matchStatus.style.display = 'none';
@@ -2350,7 +2518,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     const badgeElement = document.getElementById('playerRoleBadge');
     
     textElement.textContent = text;
-    badgeElement.textContent = role === 'player1' ? 'Player 1' : 'Player 2';
+    badgeElement.textContent = role === 'player1' ? 'You' : (isOnlineBotGame ? 'Bot' : 'Opponent'); // Update for bot
     badgeElement.className = 'badge ' + (role === 'player1' ? 'player1-badge' : 'player2-badge');
     
     statusElement.style.display = text ? 'block' : 'none';
@@ -2375,7 +2543,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     const connectedRef = database.ref(".info/connected");
     connectedRef.on("value", (snap) => {
       if (snap.val() === false) {
-        if (isOnlineGame && gameActive) {
+        if (isOnlineGame && gameActive && !isOnlineBotGame) { // Only for real online games
           endOnlineGame(playerRole === 'player1' ? 2 : 1);
         }
         if (matchmakingRef) {
@@ -2389,6 +2557,8 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
   function startGame() {
     hasShownResult = false;
     gameOver = false;
+    isOnlineBotGame = false; // Reset for local games
+    isBotMoveScheduled = false; // Reset the flag
 
     const mode = modeSelect.value;
     
@@ -2399,7 +2569,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     gameActive = true;
     
     if (mode !== 'online') {
-      generateObstacles();
+      generateObstacles(); // This function now handles local obstacle generation
       currentPlayer = mode === 'robot' ? 2 : 1;
       if (mode === 'robot' && currentPlayer === 2) {
         setTimeout(robotMove, 500);
@@ -2426,7 +2596,7 @@ if (isOnlineGame && currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
     } else {
       document.getElementById('onlineMatchModal').style.display = 'none'; // Modalı kapat
       document.getElementById('firstMoveHelp').style.display = 'block';
-      if (currentGameRef) {
+      if (currentGameRef && !isOnlineBotGame) { // Only try to update and remove if it's a real online game
         const winnerNum = playerRole === 'player1' ? 2 : 1;
         currentGameRef.update({
           winner: winnerNum,
@@ -2773,6 +2943,11 @@ canvas.addEventListener("touchstart", function(e) {
   }
 
   function leaveOnlineGame() {
+    if (isOnlineBotGame) { // Handle leaving a bot game
+      alert("You left the game.");
+      cleanupOnlineGame();
+      return;
+    }
     if (!isOnlineGame || !currentGameRef) return;
     const winner = playerRole === 'player1' ? 2 : 1;
     currentGameRef.update({
@@ -2807,7 +2982,7 @@ canvas.addEventListener("touchstart", function(e) {
     if (now - lastTouchTime < TOUCH_THROTTLE) return;
     lastTouchTime = now;
     
-    if (!gameActive || (isOnlineGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2))) return;
+    if (!gameActive || (isOnlineGame && !isOnlineBotGame && currentPlayer !== (playerRole === 'player1' ? 1 : 2)) || (isOnlineBotGame && currentPlayer !== 1)) return; // Adjusted for bot
 
     const currentPoint = lastPoint || { x: 0, y: gridH - 1 };
     let nextPoint = { ...currentPoint };
@@ -2905,7 +3080,7 @@ canvas.addEventListener("touchstart", function(e) {
     } else {
       document.getElementById('onlineMatchModal').style.display = 'none'; // Modalı kapat
       document.getElementById('firstMoveHelp').style.display = 'block';
-      if (currentGameRef) {
+      if (currentGameRef && !isOnlineBotGame) { // Only try to update and remove if it's a real online game
         const winnerNum = playerRole === 'player1' ? 2 : 1;
         currentGameRef.update({
           winner: winnerNum,
