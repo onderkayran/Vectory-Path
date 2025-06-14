@@ -40,6 +40,8 @@
     body {
       background: linear-gradient(135deg, var(--background-color) 0%, #e6f7f5 100%);
       background-attachment: fixed;
+      padding: 20px;
+      padding-bottom: 100px; /* Increased to accommodate bottom nav and leave game button */
     }
 
     /* Oyun konteyneri için yeni stil */
@@ -50,6 +52,13 @@
       padding: 30px;
       margin-bottom: 20px;
       transition: all 0.3s ease;
+      max-width: 500px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 10px;
     }
 
     /* Canvas için yeni stil */
@@ -59,6 +68,13 @@
       background: linear-gradient(135deg, #e6f7f5 0%, #ffffff 100%);
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
       transition: all 0.3s ease;
+      border: 2px solid #e0e0e0;
+      background-color: #e6f7f5;
+      display: block;
+      margin: 0 auto 20px auto;
+      width: 100%;
+      max-width: 450px;
+      height: 450px;
     }
 
     /* Butonlar için yeni stil */
@@ -559,7 +575,7 @@
   @media (max-width: 600px) {
     body {
       padding: 10px;
-      padding-bottom: 60px;
+      padding-bottom: 120px; /* Further increase for mobile */
     }
 
     .game-container {
@@ -782,6 +798,10 @@
     /* margin: 0 auto; kaldırıldı, flex gap ile kontrol edilecek */
     width: auto; /* İçeriğe göre genişlik */
     white-space: nowrap;
+  }
+
+  #leaveGameBtn {
+    margin-bottom: 70px; /* Add margin to push it above the bottom-nav */
   }
 </style>
 </head>
