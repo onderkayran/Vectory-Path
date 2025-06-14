@@ -1004,7 +1004,6 @@
   const XP_PER_WIN = 20;
   const XP_PER_LOSS = 5;
   let gameInitializedForOnlineMode = false; // New flag
-  let isBotMoveScheduled = false; // NEW FLAG HERE
 
   function calculateLevel(wins) {
   return Math.floor(wins / 5) + 1;
@@ -1624,12 +1623,9 @@
       } else { // Sıra botta
         clearInterval(moveTimer);
         document.getElementById("turnTimer").style.display = 'none';
-        if (!isBotMoveScheduled) {
-          isBotMoveScheduled = true;
-          setTimeout(robotMove, 1000);
-        }
+        // Bot's move is scheduled by sendOnlineMove or startOnlineGame, not here.
       }
-} else { // Normal online oyun
+    } else { // Normal online oyun
       if (currentPlayer === (playerRole === 'player1' ? 1 : 2)) {
         startMoveTimer();
       } else {
@@ -2378,7 +2374,6 @@ if (gameStatusText) {
     isOnlineGame = true;
     gameActive = true;
     gameInitializedForOnlineMode = true; // Set the flag
-    isBotMoveScheduled = false; // Ensure it's false for new game start
     
     gridW = gameData.config.gridWidth;
     gridH = gameData.config.gridHeight;
@@ -2613,7 +2608,6 @@ if (gameStatusText) {
     hasShownResult = false;
     gameOver = false;
     isOnlineBotGame = false; // Reset for local games
-    isBotMoveScheduled = false; // Reset the flag
 
     const mode = modeSelect.value;
     
