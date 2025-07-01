@@ -1309,6 +1309,12 @@
   const tryAgainBtn = document.getElementById('tryAgainBtn');
   const difficultySelect = document.getElementById('difficultySelect');
   const modeSelect = document.getElementById('modeSelect');
+modeSelect.addEventListener('change', () => {
+  if (gameActive && isOnlineGame && isOnlineBotGame && modeSelect.value !== 'online') {
+    // Kullanıcı oyun devam ederken online bot modundayken başka moda geçti
+    leaveOnlineGame(); // Modal göster, XP işlemleri, cleanup
+  }
+});
   const findMatchBtn = document.getElementById('findMatchBtn');
   const matchStatus = document.getElementById('matchStatus');
   const matchStatusText = document.getElementById('matchStatusText');
@@ -2991,23 +2997,30 @@ canvas.addEventListener("touchstart", function(e) {
     loseSound.play();
   }
 
-  function leaveOnlineGame() {
-    if (isOnlineBotGame) { // Handle leaving a bot game
-      alert("You left the game.");
-      cleanupOnlineGame();
-      return;
+function leaveOnlineGame() {
+  if (!gameActive) return;
+  gameActive = false;
+
+  const winner = playerRole === 'player1' ? 2 : 1;
+
+  if (isOnlineGame) {
+    if (isOnlineBotGame) {
+      // Gerçekte botla oynuyorsun ama kullanıcı bilmiyor
+      showOnlineResult(winner); // modal + XP + cleanup
+    } else {
+      if (!currentGameRef) return;
+      currentGameRef.update({
+        winner: winner,
+        status: 'finished',
+        endedAt: firebase.database.ServerValue.TIMESTAMP
+      }).then(() => {
+        showOnlineResult(winner);
+      });
     }
-    if (!isOnlineGame || !currentGameRef) return;
-    const winner = playerRole === 'player1' ? 2 : 1;
-    currentGameRef.update({
-      winner: winner,
-      status: 'finished',
-      endedAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      alert("You left the game. The opponent wins.");
-      cleanupOnlineGame();
-    });
+  } else {
+    endGame(winner); // offline robot modu
   }
+}
 
   document.getElementById('leaveGameBtn').addEventListener('click', leaveOnlineGame);
 
